@@ -11,6 +11,7 @@ import { esc, $, $$ } from './ui/dom.js';
 import { icon, brandHtml, brandAvatar } from './ui/icons.js';
 import { productImageHtml, installImageFallback } from './ui/placeholder.js';
 import { mountAdmin } from './ui/admin.js';
+import { installHtml, refreshInstall, initInstall } from './ui/install.js';
 
 installImageFallback();
 
@@ -119,6 +120,7 @@ ${modeBar()}
         <div class="row">${icon.ig}<a class="link" href="${esc(S.instagram_url)}" target="_blank" rel="noopener noreferrer">${esc(S.instagram_handle)}</a></div></div>
     </div>
   </div></section>
+${installHtml()}
 </main>
 
 <footer class="footer"><div class="wrap">
@@ -295,6 +297,7 @@ function renderStore() {
   root.innerHTML = storeHtml();
   fillAll(root);
   updateCartUI(root);
+  refreshInstall();
   const unsub = cart.subscribe(() => updateCartUI(root));
 
   const onKey = (e) => { if (e.key === 'Escape' && state.cartOpen) setCartOpen(root, false); };
@@ -308,6 +311,11 @@ function renderStore() {
     if (e.target.name === 'fulfillment') { state.fulfillment = e.target.value; updateOrderLink(root); }
   });
   root.addEventListener('click', async (e) => {
+    if (e.target.closest('#waLink') && navigator.onLine === false) {
+      e.preventDefault();
+      showToast(root, 'Sem internet. O pedido não foi enviado. Tente de novo quando a conexão voltar.');
+      return;
+    }
     const el = e.target.closest('[data-action]');
     if (!el) return;
     const { action, id } = el.dataset;
@@ -376,4 +384,27 @@ async function start() {
   }
   route();
 }
+/** Faixa fixa quando o aparelho fica sem internet (some sozinha quando a conexão volta). */
+function watchConnection() {
+  const bar = document.createElement('div');
+  bar.className = 'offbar'; bar.setAttribute('role', 'status'); bar.hidden = navigator.onLine !== false;
+  bar.textContent = 'Sem internet. Pedidos e alterações só funcionam com conexão.';
+  document.body.appendChild(bar);
+  window.addEventListener('offline', () => { bar.hidden = false; });
+  window.addEventListener('online', () => { bar.hidden = true; });
+}
+
+/** PWA: service worker só na loja publicada (https ou localhost). No protótipo e em arquivos locais, não. */
+function setupPwa() {
+  if (import.meta.env.VITE_PROTOTYPE === '1') return;
+  initInstall();
+  watchConnection();
+  const okOrigin = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  if (!('serviceWorker' in navigator) || !okOrigin) return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((e) => console.warn('service worker', e));
+  });
+}
+
+setupPwa();
 start();

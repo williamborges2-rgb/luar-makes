@@ -219,3 +219,45 @@ Comandos: `npm run dev` · `npm run build` · `npm test` · `npm run images` · 
 ## Identidade visual (Instagram @luarmakeup10)
 
 A logo do perfil está em `src/assets/logo-luar.webp` (usada no cabeçalho e na apresentação). Ordem da página: cabeçalho compacto → apresentação com **Luar Make Up**, *Realce sua luz!* e **Tudo por R$ 10,00** → **Em destaque** → Vitrine (busca e filtros) → Onde estamos. Para trocar a logo, substitua o arquivo mantendo o nome.
+
+## App instalável (PWA)
+
+A loja agora pode ser instalada no celular como aplicativo, **sem Apple App Store nem Google Play**. Quem não instalar continua usando o site normalmente.
+
+### O que mudou
+- `public/manifest.webmanifest`: nome **Luar Make Up**, idioma `pt-BR`, abre em tela cheia (`standalone`), cores creme/rosé. Caminhos relativos: funciona em qualquer endereço (domínio do Netlify, domínio próprio ou se o nome do projeto mudar), desde que o site esteja na raiz.
+- `public/icons/`: ícones PNG feitos a partir da logo do perfil (192 e 512 normais, 192 e 512 *maskable* para Android, 180 para iPhone, 32 para a aba do navegador).
+- `public/sw.js`: service worker mínimo. Só trata o próprio site: **não guarda** carrinho, pedidos, login, dados do Supabase nem nada do WhatsApp (endereços externos nem passam por ele). Páginas vão sempre à internet primeiro; sem conexão aparece `public/offline.html` ("Você está sem internet… nenhum pedido foi enviado"). Só ficam em cache a página offline, os ícones e os arquivos `/assets/` (nomes com código, públicos).
+- `vite.config.js`: a cada `npm run build` troca `__BUILD_ID__` dentro de `dist/sw.js`. Assim o service worker muda a cada publicação, o navegador instala a versão nova sozinho e apaga o cache antigo. Ninguém fica preso a uma versão velha.
+- `index.html`: manifesto, ícones, `theme-color` e as tags para iPhone.
+- `src/lib/pwa.js` e `src/ui/install.js`: bloco "Instalar app" no fim da página (acima do rodapé) e detecção do aparelho.
+- `src/main.js` e `src/styles.css`: registro do service worker (só em `https` ou `localhost`, e nunca no protótipo), faixa "Sem internet" e aviso ao tocar em *Finalizar pedido* sem conexão.
+- `tests/pwa.test.mjs`: testes da detecção de aparelho, do manifesto (ícones existem e têm o tamanho declarado) e do service worker.
+
+Não houve mudança em banco, tabelas, políticas, variáveis de ambiente, `netlify.toml`, comando de build (`npm run build`) nem pasta publicada (`dist`).
+
+### Como a cliente instala no Android (Chrome)
+1. Abra o endereço da loja no Chrome.
+2. Role até o fim da página e toque em **Instalar app** (ou use o menu **⋮ → Instalar app / Adicionar à tela inicial**).
+3. Confirme. O ícone da Luar Make Up aparece na tela inicial.
+
+Se o navegador não oferecer o convite, o bloco mostra o caminho pelo menu do navegador.
+
+### Como a cliente instala no iPhone (Safari)
+1. Abra o endereço da loja no **Safari** (em outro navegador, o bloco avisa para abrir no Safari).
+2. Toque em **Compartilhar** (quadrado com seta para cima).
+3. Escolha **Adicionar à Tela de Início** e toque em **Adicionar**.
+
+No iPhone não existe botão automático de instalar: o próprio sistema exige esse caminho.
+
+### Como atualizar o site (GitHub + Netlify)
+1. No repositório, substitua os arquivos da pasta `luar-makes` pelos deste projeto (mantenha a pasta `luar-makes`, sem criar `luar-makes/luar-makes`).
+2. Faça o commit e o push. O Netlify compila e publica sozinho.
+3. **Não** mexa nas variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` do Netlify: elas continuam valendo.
+4. Quem já instalou recebe a versão nova na próxima vez que abrir o app com internet (o app fecha e abre de novo para atualizar por completo).
+
+### Como conferir
+- **Computador (Chrome):** abra o site publicado, F12 → aba *Application* → *Manifest* (sem erros, ícones aparecem) e *Service Workers* (status *activated*). O ícone de instalar aparece na barra de endereço.
+- **Android:** abra no Chrome, role até o fim: deve aparecer **Instalar app**. Depois de instalar, abra pelo ícone: abre sem barra do navegador.
+- **iPhone:** abra no Safari, role até o fim: aparecem os 3 passos. Depois de adicionar, abra pelo ícone da tela inicial.
+- **Offline:** instalado, ative o modo avião e abra o app: aparece "Você está sem internet". Com a loja já aberta, ao perder a conexão aparece uma faixa no topo e *Finalizar pedido* avisa que nada foi enviado.

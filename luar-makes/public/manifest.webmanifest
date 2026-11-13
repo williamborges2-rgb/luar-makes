@@ -1,0 +1,21 @@
+{
+  "id": "./",
+  "name": "Luar Make Up",
+  "short_name": "Luar Make Up",
+  "description": "Loja Luar Make Up: makes, gloss, brincos e acessórios, tudo por R$ 10,00. Pedidos pelo WhatsApp.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fdf6f3",
+  "theme_color": "#fdf6f3",
+  "categories": ["shopping", "beauty"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

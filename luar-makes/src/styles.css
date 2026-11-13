@@ -425,3 +425,14 @@ fieldset.opts legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
   .section--first { padding-top: 16px; }
   .section--first .section__head { margin-bottom: 12px; }
 }
+
+/* ===== PWA: instalar app e aviso offline ===== */
+.install { padding: 30px 0 0; }
+.install__card { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 20px; box-shadow: var(--shadow); }
+.install__card h3 { margin: 0 0 6px; font-family: var(--font-display); font-size: 21px; line-height: 1.2; }
+.install__card p { margin: 0; color: var(--ink-2); font-size: 15px; }
+.install__steps { margin: 0; padding-left: 20px; color: var(--ink-2); font-size: 15px; display: grid; gap: 6px; }
+.ico-inline { width: 18px; height: 18px; vertical-align: -3px; color: var(--rose); }
+.offbar { position: fixed; left: 0; right: 0; top: 0; z-index: 90; background: var(--warn-bg); color: var(--warn-ink); text-align: center; font-size: 13.5px; font-weight: 600; padding: 8px 12px; border-bottom: 1px solid #e6cf9f; }
+.offbar[hidden] { display: none; }
+@media (min-width: 640px) { .install__card { flex-direction: row; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 24px; } }
