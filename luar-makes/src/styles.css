@@ -434,14 +434,16 @@ fieldset.opts legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
 .nav { display: flex; gap: 0; flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .nav::-webkit-scrollbar { display: none; }
 .nav button { padding: 10px 5px; font-size: 13px; white-space: nowrap; min-height: 42px; }
-.installbtn { flex: none; display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--rose); background: #fff; color: var(--rose); border-radius: 999px; padding: 6px 9px; min-height: 36px; font: inherit; font-weight: 700; font-size: 13px; white-space: nowrap; }
-.installbtn:hover { background: var(--blush-100); }
+.installbtn { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 44px; height: 44px; min-width: 44px; padding: 0; border: 0; border-radius: 999px; background: var(--rose-gold); box-shadow: 0 1px 6px rgba(143, 78, 61, .32); color: #fff3ec; font: inherit; font-weight: 700; font-size: 13.5px; white-space: nowrap; }
+.installbtn:hover { filter: brightness(1.06); }
+.installbtn:active { filter: brightness(.97); }
 .installbtn[hidden] { display: none; }
-.installbtn .ico { width: 16px; height: 16px; }
-.installbtn__short { display: none; }
-@media (max-width: 379px) { .installbtn__long { display: none; } .installbtn__short { display: inline; } .nav button { padding: 10px 5px; font-size: 13px; } }
+.installbtn .ico { width: 20px; height: 20px; flex: none; }
+.installbtn__label { display: none; }
 .section, .hero { scroll-margin-top: 100px; }
 @media (min-width: 900px) {
+  .installbtn { width: auto; padding: 0 16px 0 14px; }
+  .installbtn__label { display: inline; }
   .topbar .wrap { flex-wrap: nowrap; padding-top: 0; height: 72px; }
   .topbar .brand, .topbar .topact { height: auto; }
   .topsub { order: 2; flex: 1 1 auto; border-top: 0; margin: 0; padding: 0; justify-content: center; gap: 18px; min-height: 0; }

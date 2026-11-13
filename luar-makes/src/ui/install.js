@@ -13,7 +13,7 @@ let sheet = null;
 let lastFocus = null;
 
 const shareIcon = '<svg class="ico ico-inline" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M8.5 7.5 12 4l3.5 3.5"/><path d="M7 11H6a1.5 1.5 0 0 0-1.5 1.5v6A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5v-6A1.5 1.5 0 0 0 18 11h-1"/></svg>';
-const downloadIcon = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg>';
+const installIcon = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6.25" y="2.5" width="11.5" height="19" rx="2.4"/><path d="M9.5 18.1h5"/><path d="M12 7.3v6M9.1 10.4l2.9 2.9 2.9-2.9"/></svg>';
 
 function isStandalone() {
   try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch { return false; }
@@ -31,7 +31,7 @@ function currentKind() {
 
 /** Botão do cabeçalho: ícone + "Instalar app" (em tela muito estreita, "Instalar"). */
 export function installButtonHtml() {
-  return `<button class="installbtn" id="installBtn" type="button" data-install aria-label="Instalar app da Luar Make Up" hidden>${downloadIcon}<span class="installbtn__long">Instalar app</span><span class="installbtn__short" aria-hidden="true">Instalar</span></button>`;
+  return `<button class="installbtn" id="installBtn" type="button" data-install aria-label="Instalar Luar Make Up na tela inicial" title="Instalar Luar Make Up na tela inicial" hidden>${installIcon}<span class="installbtn__label" aria-hidden="true">Instalar</span></button>`;
 }
 
 const CONTENT = {
@@ -123,19 +123,23 @@ async function copyLink() {
 }
 
 async function onInstallClick() {
-  const kind = currentKind();
-  if (kind === 'prompt' && deferred) {
+  // Convite nativo disponível (beforeinstallprompt já capturado): chama prompt() direto no toque,
+  // sem nenhuma tela intermediária. Quem decide é o Android/navegador, nunca o site.
+  if (deferred) {
     const ev = deferred;
-    deferred = null; // o convite só pode ser usado uma vez
+    deferred = null; // o evento só serve uma vez; descartado logo após o uso
     try {
       ev.prompt();
       const { outcome } = await ev.userChoice;
       if (outcome === 'accepted') installed = true;
+      // 'dismissed': a pessoa cancelou. O botão continua disponível; se o navegador oferecer
+      // um novo convite mais tarde, ele é capturado nesse momento (ver initInstall).
     } catch (e) { console.warn('instalação', e); }
     refreshInstall();
     return;
   }
-  openSheet(kind);
+  // Sem convite nativo no momento: só então mostramos instruções.
+  openSheet(currentKind());
 }
 
 export function initInstall() {
