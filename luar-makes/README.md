@@ -230,7 +230,7 @@ A loja agora pode ser instalada no celular como aplicativo, **sem Apple App Stor
 - `public/sw.js`: service worker mínimo. Só trata o próprio site: **não guarda** carrinho, pedidos, login, dados do Supabase nem nada do WhatsApp (endereços externos nem passam por ele). Páginas vão sempre à internet primeiro; sem conexão aparece `public/offline.html` ("Você está sem internet… nenhum pedido foi enviado"). Só ficam em cache a página offline, os ícones e os arquivos `/assets/` (nomes com código, públicos).
 - `vite.config.js`: a cada `npm run build` troca `__BUILD_ID__` dentro de `dist/sw.js`. Assim o service worker muda a cada publicação, o navegador instala a versão nova sozinho e apaga o cache antigo. Ninguém fica preso a uma versão velha.
 - `index.html`: manifesto, ícones, `theme-color` e as tags para iPhone.
-- `src/lib/pwa.js` e `src/ui/install.js`: bloco "Instalar app" no fim da página (acima do rodapé) e detecção do aparelho.
+- `src/lib/pwa.js` e `src/ui/install.js`: detecção do aparelho e o botão **Instalar app** no cabeçalho fixo (ao lado de Destaques, Vitrine e Onde estamos; em tela muito estreita vira "Instalar"). No Android com convite nativo ele abre o convite do navegador; nos demais casos abre uma janelinha com as instruções certas (iPhone/Safari, navegador interno do Instagram etc.). Some quando o app já está instalado. As instruções só abrem quando a pessoa toca no botão e podem ser fechadas e abertas de novo quando quiser.
 - `src/main.js` e `src/styles.css`: registro do service worker (só em `https` ou `localhost`, e nunca no protótipo), faixa "Sem internet" e aviso ao tocar em *Finalizar pedido* sem conexão.
 - `tests/pwa.test.mjs`: testes da detecção de aparelho, do manifesto (ícones existem e têm o tamanho declarado) e do service worker.
 
@@ -238,14 +238,14 @@ Não houve mudança em banco, tabelas, políticas, variáveis de ambiente, `netl
 
 ### Como a cliente instala no Android (Chrome)
 1. Abra o endereço da loja no Chrome.
-2. Role até o fim da página e toque em **Instalar app** (ou use o menu **⋮ → Instalar app / Adicionar à tela inicial**).
+2. Toque em **Instalar app** no cabeçalho (ou use o menu **⋮ → Instalar app / Adicionar à tela inicial**).
 3. Confirme. O ícone da Luar Make Up aparece na tela inicial.
 
-Se o navegador não oferecer o convite, o bloco mostra o caminho pelo menu do navegador.
+Se o navegador não oferecer o convite, o botão mostra o caminho pelo menu do navegador. Dentro do navegador do Instagram ou de outro app, o botão explica como abrir a loja no Chrome (Android) ou no Safari (iPhone).
 
 ### Como a cliente instala no iPhone (Safari)
-1. Abra o endereço da loja no **Safari** (em outro navegador, o bloco avisa para abrir no Safari).
-2. Toque em **Compartilhar** (quadrado com seta para cima).
+1. Abra o endereço da loja no **Safari** (em outro navegador ou no Instagram, o botão **Instalar app** avisa para abrir no Safari).
+2. Toque em **Compartilhar** (quadrado com seta para cima), ou em **Instalar app** no cabeçalho para ver os passos.
 3. Escolha **Adicionar à Tela de Início** e toque em **Adicionar**.
 
 No iPhone não existe botão automático de instalar: o próprio sistema exige esse caminho.
@@ -258,6 +258,6 @@ No iPhone não existe botão automático de instalar: o próprio sistema exige e
 
 ### Como conferir
 - **Computador (Chrome):** abra o site publicado, F12 → aba *Application* → *Manifest* (sem erros, ícones aparecem) e *Service Workers* (status *activated*). O ícone de instalar aparece na barra de endereço.
-- **Android:** abra no Chrome, role até o fim: deve aparecer **Instalar app**. Depois de instalar, abra pelo ícone: abre sem barra do navegador.
-- **iPhone:** abra no Safari, role até o fim: aparecem os 3 passos. Depois de adicionar, abra pelo ícone da tela inicial.
+- **Android:** abra no Chrome: o botão **Instalar app** aparece no cabeçalho. Depois de instalar, abra pelo ícone: abre sem barra do navegador.
+- **iPhone:** abra no Safari e toque em **Instalar app** no cabeçalho: aparecem os 3 passos. Depois de adicionar, abra pelo ícone da tela inicial.
 - **Offline:** instalado, ative o modo avião e abra o app: aparece "Você está sem internet". Com a loja já aberta, ao perder a conexão aparece uma faixa no topo e *Finalizar pedido* avisa que nada foi enviado.

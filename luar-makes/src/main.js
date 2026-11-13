@@ -11,7 +11,7 @@ import { esc, $, $$ } from './ui/dom.js';
 import { icon, brandHtml, brandAvatar } from './ui/icons.js';
 import { productImageHtml, installImageFallback } from './ui/placeholder.js';
 import { mountAdmin } from './ui/admin.js';
-import { installHtml, refreshInstall, initInstall } from './ui/install.js';
+import { installButtonHtml, refreshInstall, initInstall } from './ui/install.js';
 
 installImageFallback();
 
@@ -55,11 +55,14 @@ function storeHtml() {
 ${modeBar()}
 <header class="topbar"><div class="wrap">
   <button class="brand" data-action="goto" data-target="top" aria-label="${esc(STORE.name)} — início">${brandHtml}</button>
-  <nav class="nav" aria-label="Principal">
-    <button data-action="goto" data-target="destaques">Destaques</button>
-    <button data-action="goto" data-target="vitrine">Vitrine</button>
-    <button data-action="goto" data-target="contato">Onde estamos</button>
-  </nav>
+  <div class="topsub">
+    <nav class="nav" aria-label="Principal">
+      <button data-action="goto" data-target="destaques">Destaques</button>
+      <button data-action="goto" data-target="vitrine">Vitrine</button>
+      <button data-action="goto" data-target="contato">Onde estamos</button>
+    </nav>
+    ${installButtonHtml()}
+  </div>
   <div class="topact">
     <a class="topicon" href="${esc(S.instagram_url)}" target="_blank" rel="noopener noreferrer" aria-label="Instagram ${esc(S.instagram_handle)}">${icon.ig}</a>
     <a class="topicon" href="${esc(S.whatsappUrl)}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp ${esc(S.whatsapp_display)}">${icon.wa}</a>
@@ -120,7 +123,6 @@ ${modeBar()}
         <div class="row">${icon.ig}<a class="link" href="${esc(S.instagram_url)}" target="_blank" rel="noopener noreferrer">${esc(S.instagram_handle)}</a></div></div>
     </div>
   </div></section>
-${installHtml()}
 </main>
 
 <footer class="footer"><div class="wrap">

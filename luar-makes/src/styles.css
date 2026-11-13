@@ -426,13 +426,41 @@ fieldset.opts legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
   .section--first .section__head { margin-bottom: 12px; }
 }
 
-/* ===== PWA: instalar app e aviso offline ===== */
-.install { padding: 30px 0 0; }
-.install__card { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 20px; box-shadow: var(--shadow); }
-.install__card h3 { margin: 0 0 6px; font-family: var(--font-display); font-size: 21px; line-height: 1.2; }
-.install__card p { margin: 0; color: var(--ink-2); font-size: 15px; }
-.install__steps { margin: 0; padding-left: 20px; color: var(--ink-2); font-size: 15px; display: grid; gap: 6px; }
+/* ===== PWA: botão Instalar app no cabeçalho, janelinha de instruções, aviso offline ===== */
+.topbar .wrap { flex-wrap: wrap; height: auto; min-height: 0; row-gap: 0; padding-top: 6px; padding-bottom: 0; }
+.topbar .brand { order: 1; height: 50px; }
+.topbar .topact { order: 2; height: 50px; }
+.topsub { order: 3; flex: 1 0 100%; min-width: 0; max-width: calc(100% + 32px); display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 42px; border-top: 1px solid var(--line); margin: 0 -16px; padding: 0 16px; }
+.nav { display: flex; gap: 0; flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.nav::-webkit-scrollbar { display: none; }
+.nav button { padding: 10px 5px; font-size: 13px; white-space: nowrap; min-height: 42px; }
+.installbtn { flex: none; display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--rose); background: #fff; color: var(--rose); border-radius: 999px; padding: 6px 9px; min-height: 36px; font: inherit; font-weight: 700; font-size: 13px; white-space: nowrap; }
+.installbtn:hover { background: var(--blush-100); }
+.installbtn[hidden] { display: none; }
+.installbtn .ico { width: 16px; height: 16px; }
+.installbtn__short { display: none; }
+@media (max-width: 379px) { .installbtn__long { display: none; } .installbtn__short { display: inline; } .nav button { padding: 10px 5px; font-size: 13px; } }
+.section, .hero { scroll-margin-top: 100px; }
+@media (min-width: 900px) {
+  .topbar .wrap { flex-wrap: nowrap; padding-top: 0; height: 72px; }
+  .topbar .brand, .topbar .topact { height: auto; }
+  .topsub { order: 2; flex: 1 1 auto; border-top: 0; margin: 0; padding: 0; justify-content: center; gap: 18px; min-height: 0; }
+  .topbar .topact { order: 3; }
+  .nav { gap: 14px; overflow: visible; }
+  .nav button { font-size: 14.5px; padding: 10px 4px; }
+  .section, .hero { scroll-margin-top: 90px; }
+}
+
+.sheetwrap { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
+.sheet__scrim { position: absolute; inset: 0; background: rgba(42, 23, 19, .55); }
+.sheet { position: relative; width: 100%; max-width: 460px; max-height: 88vh; overflow: auto; background: var(--bg); border-radius: 22px 22px 0 0; padding: 22px 20px 24px; box-shadow: 0 -10px 40px rgba(42, 23, 19, .3); }
+.sheet h2 { margin: 0 0 12px; font-family: var(--font-display); font-size: 24px; line-height: 1.15; }
+.sheet__body p { margin: 0 0 12px; color: var(--ink-2); font-size: 15.5px; }
+.sheet__steps { margin: 0 0 12px; padding-left: 22px; display: grid; gap: 10px; color: var(--ink-2); font-size: 15.5px; }
+.sheet__note { color: var(--muted); font-size: 14px; }
+.sheet__actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+.sheet__msg { margin: 10px 0 0; min-height: 1.2em; font-size: 14px; color: var(--rose); }
 .ico-inline { width: 18px; height: 18px; vertical-align: -3px; color: var(--rose); }
+@media (min-width: 640px) { .sheetwrap { align-items: center; } .sheet { border-radius: 22px; } }
 .offbar { position: fixed; left: 0; right: 0; top: 0; z-index: 90; background: var(--warn-bg); color: var(--warn-ink); text-align: center; font-size: 13.5px; font-weight: 600; padding: 8px 12px; border-bottom: 1px solid #e6cf9f; }
 .offbar[hidden] { display: none; }
-@media (min-width: 640px) { .install__card { flex-direction: row; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 24px; } }

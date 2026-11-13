@@ -6,6 +6,9 @@ import { detectInstall } from '../src/lib/pwa.js';
 const UA = {
   iphoneSafari: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
   iphoneChrome: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/124.0.6367.88 Mobile/15E148 Safari/604.1',
+  androidInstagram: 'Mozilla/5.0 (Linux; Android 14; Pixel 7 Build/UP1A) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/124.0.0.0 Mobile Safari/537.36 Instagram 320.0.0.34.109 Android (34/14; 420dpi)',
+  androidWebview: 'Mozilla/5.0 (Linux; Android 14; Pixel 7; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/124.0.0.0 Mobile Safari/537.36',
+  iphoneWebview: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
   iphoneInstagram: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 320.0.0 (iPhone14,2)',
   ipadDesktopMode: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
   androidChrome: 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
@@ -27,9 +30,14 @@ test('Android sem convite: ajuda pelo menu, nunca passos de iPhone', () => {
 test('iPhone no Safari: Compartilhar → Adicionar à Tela de Início', () => {
   assert.equal(kind({ ua: UA.iphoneSafari, platform: 'iPhone' }), 'ios-safari');
 });
-test('iPhone em outro navegador/app: pede para abrir no Safari', () => {
+test('iPhone em outro navegador (Chrome etc.): pede para abrir no Safari', () => {
   assert.equal(kind({ ua: UA.iphoneChrome }), 'ios-other');
-  assert.equal(kind({ ua: UA.iphoneInstagram }), 'ios-other');
+});
+test('navegador interno de outro app: explica como abrir no Safari ou no Chrome', () => {
+  assert.equal(kind({ ua: UA.iphoneInstagram }), 'inapp-ios');
+  assert.equal(kind({ ua: UA.iphoneWebview }), 'inapp-ios');
+  assert.equal(kind({ ua: UA.androidInstagram }), 'inapp-android');
+  assert.equal(kind({ ua: UA.androidWebview }), 'inapp-android');
 });
 test('iPad que se apresenta como Mac é tratado como iOS; Mac de verdade não', () => {
   assert.equal(kind({ ua: UA.ipadDesktopMode, platform: 'MacIntel', maxTouchPoints: 5 }), 'ios-safari');
