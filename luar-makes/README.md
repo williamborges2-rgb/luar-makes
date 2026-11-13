@@ -1,6 +1,6 @@
-# Luar Makes — loja virtual
+# Luar Make Up — loja virtual
 
-Site da **Luar Makes** (Florianópolis/SC): *Realce sua luz*. **Tudo por R$ 10,00.**
+Site da **Luar Make Up** (Florianópolis/SC): *Realce sua luz!*. **Tudo por R$ 10,00.**
 
 - Vitrine com busca e filtro por categoria; visual para celular em primeiro lugar
 - Carrinho (total = quantidade de itens × R$ 10,00)
@@ -143,7 +143,7 @@ Há três abas: **Produtos**, **Categorias** e **Configurações**.
 3. Para trocar só a foto de um item, abra *Editar* e escolha outra (a anterior é apagada do armazenamento).
 4. Para trocar as **categorias**, use a aba *Categorias*.
 
-Os nomes e fotos de exemplo vêm do catálogo do fornecedor **RS Makes**, só para demonstrar a vitrine. **A Luar Makes não é afiliada nem patrocinada pela RS Makes.** Todos aparecem por R$ 10,00; os preços do fornecedor não foram copiados. O catálogo consultado não tem brincos: a categoria *Brincos* existe, mas está vazia até a loja cadastrar os seus.
+Os nomes e fotos de exemplo vêm do catálogo do fornecedor **RS Makes**, só para demonstrar a vitrine. **A Luar Make Up não é afiliada nem patrocinada pela RS Makes.** Todos aparecem por R$ 10,00; os preços do fornecedor não foram copiados. O catálogo consultado não tem brincos: a categoria *Brincos* existe, mas está vazia até a loja cadastrar os seus.
 
 Pelo SQL: `delete from public.products where is_demo;` remove todos os exemplos de uma vez. Os dados de exemplo ficam em `src/data/demo-products.json`; depois de editá-lo, rode `npm run seed:sql` para regenerar `supabase/seed.sql`.
 
@@ -151,7 +151,7 @@ Pelo SQL: `delete from public.products where is_demo;` remove todos os exemplos 
 
 ## 5. Alterar dados da loja
 
-Com o Supabase ligado, **telefone, Instagram, endereço e instruções** são editados no painel (aba *Configurações*) e as **categorias** na aba *Categorias*. Os valores de `src/config.js` (`DEFAULT_SETTINGS`, `DEFAULT_CATEGORIES`) só valem como ponto de partida e no modo demonstração. O nome da marca e a frase *Realce sua luz* também ficam em `src/config.js`. O preço único é `PRICE_CENTS = 1000`, mas **o banco só aceita R$ 10,00**: para mudar o valor no futuro, altere a constante e a regra `check (price = 10.00)` em `supabase/schema.sql`.
+Com o Supabase ligado, **telefone, Instagram, endereço e instruções** são editados no painel (aba *Configurações*) e as **categorias** na aba *Categorias*. Os valores de `src/config.js` (`DEFAULT_SETTINGS`, `DEFAULT_CATEGORIES`) só valem como ponto de partida e no modo demonstração. O nome da marca e a frase *Realce sua luz!* também ficam em `src/config.js`. O preço único é `PRICE_CENTS = 1000`, mas **o banco só aceita R$ 10,00**: para mudar o valor no futuro, altere a constante e a regra `check (price = 10.00)` em `supabase/schema.sql`.
 
 ### Visual
 Cores e fontes estão no início de `src/styles.css` (`:root`). Os **números** (preços, quantidades, totais) usam um subconjunto da fonte Inter embutido em `src/fonts/` (só algarismos), para o "1" nunca parecer uma letra. Não troque a fonte dos números por uma fonte com algarismos "antigos" (como a Cormorant Garamond), que é o que causa essa confusão.
@@ -215,3 +215,7 @@ Comandos: `npm run dev` · `npm run build` · `npm test` · `npm run images` · 
 - Fotos e produtos reais da loja (seção 4) e, antes de publicar, `npm run images` para as fotos de exemplo ficarem no próprio site (seção 3).
 - Estoque: a dona atualiza as quantidades depois de confirmar cada pedido (não há integração de pedidos confirmados).
 - Confirmar com a loja as condições de entrega antes de divulgar qualquer informação sobre elas. O site só oferece *Consultar entrega*.
+
+## Identidade visual (Instagram @luarmakeup10)
+
+A logo do perfil está em `src/assets/logo-luar.webp` (usada no cabeçalho e na apresentação). Ordem da página: cabeçalho compacto → apresentação com **Luar Make Up**, *Realce sua luz!* e **Tudo por R$ 10,00** → **Em destaque** → Vitrine (busca e filtros) → Onde estamos. Para trocar a logo, substitua o arquivo mantendo o nome.

@@ -37,7 +37,7 @@ export function placeholderHtml(category = '', name = '') {
   const [a, b, ink] = PALETTES[hash(name || category) % PALETTES.length];
   const kind = KIND(category);
   const spark = '<path d="M84 16c.7 5 2.3 6.6 7.3 7.3-5 .7-6.6 2.3-7.3 7.3-.7-5-2.3-6.6-7.3-7.3 5-.7 6.6-2.3 7.3-7.3z" fill="#fff" opacity=".85"/>';
-  return `<div class="ph" role="img" aria-label="Ilustração de ${esc(category || 'produto')}, sem foto" style="--ph-a:${a};--ph-b:${b};--ph-ink:${ink}"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">${ART[kind](b)}${spark}</svg><span>${esc(category || 'Luar Makes')}</span></div>`;
+  return `<div class="ph" role="img" aria-label="Ilustração de ${esc(category || 'produto')}, sem foto" style="--ph-a:${a};--ph-b:${b};--ph-ink:${ink}"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">${ART[kind](b)}${spark}</svg><span>${esc(category || 'Luar Make Up')}</span></div>`;
 }
 
 /**

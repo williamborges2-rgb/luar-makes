@@ -8,7 +8,7 @@ import { buildOrderMessage, buildWhatsAppUrl, fulfillmentOptions } from './lib/w
 import { createStore } from './lib/store.js';
 import { friendlyError } from './lib/errors.js';
 import { esc, $, $$ } from './ui/dom.js';
-import { icon, brandMark } from './ui/icons.js';
+import { icon, brandHtml, brandAvatar } from './ui/icons.js';
 import { productImageHtml, installImageFallback } from './ui/placeholder.js';
 import { mountAdmin } from './ui/admin.js';
 
@@ -53,13 +53,17 @@ function storeHtml() {
   return `
 ${modeBar()}
 <header class="topbar"><div class="wrap">
-  <button class="brand" data-action="goto" data-target="top" aria-label="${esc(STORE.name)} — início">${brandMark}<span class="brand__name">${esc(STORE.name)}</span></button>
+  <button class="brand" data-action="goto" data-target="top" aria-label="${esc(STORE.name)} — início">${brandHtml}</button>
   <nav class="nav" aria-label="Principal">
-    <button data-action="goto" data-target="categorias">Categorias</button>
+    <button data-action="goto" data-target="destaques">Destaques</button>
     <button data-action="goto" data-target="vitrine">Vitrine</button>
     <button data-action="goto" data-target="contato">Onde estamos</button>
   </nav>
-  <button class="cartbtn" data-action="openCart" aria-label="Abrir carrinho">${icon.cart}<span>Carrinho</span><span class="badge" id="badge" hidden>0</span></button>
+  <div class="topact">
+    <a class="topicon" href="${esc(S.instagram_url)}" target="_blank" rel="noopener noreferrer" aria-label="Instagram ${esc(S.instagram_handle)}">${icon.ig}</a>
+    <a class="topicon" href="${esc(S.whatsappUrl)}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp ${esc(S.whatsapp_display)}">${icon.wa}</a>
+    <button class="cartbtn" data-action="openCart" aria-label="Abrir carrinho">${icon.cart}<span class="cartbtn__txt">Carrinho</span><span class="badge" id="badge" hidden>0</span></button>
+  </div>
 </div></header>
 
 <main id="top">
@@ -67,32 +71,28 @@ ${modeBar()}
     <svg class="hero__moon" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="hm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9b9a6"/><stop offset=".5" stop-color="#fff1e8"/><stop offset="1" stop-color="#e2a48c"/></linearGradient></defs><path d="M31 22.6A13.5 13.5 0 1 1 17.4 6.6a10.5 10.5 0 0 0 13.6 16z" fill="url(#hm)"/></svg>
     ${sparkles()}
     <div class="wrap">
-      <div>
-        <p class="hero__script">${esc(STORE.tagline)}</p>
-        <h1 id="h1">Makes, gloss, brincos e acessórios em Florianópolis.</h1>
-        <p class="lead">Escolha seus favoritos, monte o carrinho e envie o pedido pelo WhatsApp. Retire na loja ou consulte a entrega.</p>
-        <div class="hero__cta">
-          <button class="btn btn-primary" data-action="goto" data-target="vitrine">Ver a vitrine</button>
-          <a class="btn btn-ghost" href="${esc(S.whatsappUrl)}" target="_blank" rel="noopener noreferrer">${icon.wa} Falar no WhatsApp</a>
+      <div class="hero__id">
+        ${brandAvatar('avatar--hero')}
+        <div class="hero__copy">
+          <p class="hero__script">${esc(STORE.tagline)}</p>
+          <h1 id="h1" aria-label="${esc(STORE.name)}"><span class="lockup__luar" aria-hidden="true">Luar</span><span class="lockup__mu" aria-hidden="true">Make Up</span></h1>
+          <p class="lead">Makes, gloss, brincos e acessórios em ${esc(STORE.city.replace('/SC', ''))}.</p>
+          <div class="hero__cta">
+            <a class="btn btn-ghost btn-small" href="${esc(S.instagram_url)}" target="_blank" rel="noopener noreferrer">${icon.ig} ${esc(S.instagram_handle)}</a>
+            <a class="btn btn-ghost btn-small" href="${esc(S.whatsappUrl)}" target="_blank" rel="noopener noreferrer">${icon.wa} WhatsApp</a>
+          </div>
         </div>
       </div>
       <div class="plaque" role="img" aria-label="Tudo por ${UNIT_PRICE_LABEL}, cada produto">
-        <div class="plaque__top" aria-hidden="true">Tudo por</div>
-        <div class="plaque__price" aria-hidden="true"><small>R$</small><strong>10,00</strong></div>
-        <div class="plaque__each" aria-hidden="true">cada produto</div>
+        <span class="plaque__top" aria-hidden="true">Tudo por</span>
+        <span class="plaque__price" aria-hidden="true"><small>R$</small><strong>10,00</strong></span>
+        <span class="plaque__each" aria-hidden="true">cada produto</span>
       </div>
     </div>
   </section>
 
-  <div class="ribbon"><div class="wrap"><span>Tudo por ${UNIT_PRICE_LABEL}</span>${icon.spark}<span>Retire na loja</span>${icon.spark}<span>Consulte a entrega</span></div></div>
-
-  <section class="section" id="categorias"><div class="wrap">
-    <div class="section__head"><p class="eyebrow">para todos os looks</p><h2 class="title">Categorias</h2></div>
-    <div class="cats" id="cats"></div>
-  </div></section>
-
-  <section class="section" id="destaques" hidden><div class="wrap">
-    <div class="section__head"><p class="eyebrow">escolhidos pela loja</p><h2 class="title">Em destaque</h2><span class="pricetag">Tudo por <b>${UNIT_PRICE_LABEL}</b></span></div>
+  <section class="section section--first" id="destaques" hidden><div class="wrap">
+    <div class="section__head section__head--row"><div><p class="eyebrow">escolhidos pela loja</p><h2 class="title">Em destaque</h2></div><button class="textlink" data-action="goto" data-target="vitrine">Ver tudo ${icon.arrow || ''}</button></div>
     <div class="grid" id="featured"></div>
   </div></section>
 
@@ -122,7 +122,7 @@ ${modeBar()}
 </main>
 
 <footer class="footer"><div class="wrap">
-  <div class="brand">${brandMark}<span class="brand__name">${esc(STORE.name)}</span></div>
+  <div class="brand">${brandHtml}</div>
   <div>${esc(STORE.tagline)} · ${esc(STORE.city)}</div>
   <div class="footer__small">${esc(S.address)}</div>
   <div class="footer__small">© ${new Date().getFullYear()} ${esc(STORE.name)}. Todos os produtos por ${UNIT_PRICE_LABEL}.</div>
@@ -172,9 +172,6 @@ function filtered() {
 
 function fillCategories(root) {
   const cats = categoriesInUse();
-  $('#cats', root).innerHTML = cats.length
-    ? cats.map((c) => `<button class="cat" data-action="filter" data-cat="${esc(c)}">${icon.spark}<span class="cat__name">${esc(c)}</span><span class="cat__n">${state.products.filter((p) => p.category === c).length} produtos</span></button>`).join('')
-    : '';
   $('#pills', root).innerHTML = ['Todos', ...cats].map((c) => `<button class="pill" data-action="filter" data-cat="${esc(c)}" aria-pressed="${state.category === c}">${esc(c)}</button>`).join('');
 }
 
@@ -194,7 +191,7 @@ function fillResults(root) {
   }
   const list = filtered();
   if (!state.products.length) { box.innerHTML = `<div class="empty">${icon.moon}<h3>A vitrine está sendo preparada</h3><p>Volte em breve ou chame a loja no WhatsApp.</p></div>`; return; }
-  if (!list.length) { box.innerHTML = `<div class="empty">${icon.search}<h3>Nenhum produto encontrado</h3><p>Tente outra palavra ou veja todas as categorias.</p><p><button class="btn btn-ghost btn-small" data-action="filter" data-cat="Todos" data-clear="1">Limpar filtros</button></p></div>`; return; }
+  if (!list.length) { box.innerHTML = `<div class="empty">${icon.search}<h3>Nenhum produto encontrado</h3><p>Tente outra palavra ou veja todos os produtos.</p><p><button class="btn btn-ghost btn-small" data-action="filter" data-cat="Todos" data-clear="1">Limpar filtros</button></p></div>`; return; }
   box.innerHTML = `<div class="grid">${list.map(cardHtml).join('')}</div>`;
 }
 
@@ -374,7 +371,7 @@ async function start() {
     store = await createStore();
   } catch (e) {
     console.error(e);
-    app.innerHTML = '<div class="wrap" style="padding:40px 16px"><div class="alert alert--error" role="alert"><span>Não foi possível iniciar a loja. Recarregue a página ou chame a Luar Makes no WhatsApp: (48) 98505-5020.</span></div></div>';
+    app.innerHTML = '<div class="wrap" style="padding:40px 16px"><div class="alert alert--error" role="alert"><span>Não foi possível iniciar a loja. Recarregue a página ou chame a Luar Make Up no WhatsApp: (48) 98505-5020.</span></div></div>';
     return;
   }
   route();

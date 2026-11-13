@@ -1,4 +1,4 @@
-/* Luar Makes — rosa blush, marrom muito escuro e rose gold (com moderação).
+/* Luar Make Up — rosa blush, chocolate, creme e rose gold (com moderação).
    Mobile primeiro: tudo é desenhado para telas estreitas e depois cresce. */
 
 /* Algarismos nítidos: subconjunto da fonte Inter (só 0–9 e ×), embutido no site.
@@ -356,4 +356,72 @@ fieldset.opts legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
   .filters .search { grid-column: auto; max-width: 420px; }
   .tabs { width: fit-content; grid-template-columns: repeat(3, auto); }
   .tab { padding: 10px 22px; }
+}
+
+/* ===== Identidade Luar Make Up (alinhada ao Instagram @luarmakeup10) ===== */
+.avatar { display: inline-grid; flex: none; width: 38px; height: 38px; border-radius: 50%; padding: 2px; background: var(--rose-gold); box-shadow: 0 1px 6px rgba(143, 78, 61, .28); }
+.avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid var(--bg); background: var(--blush-200); }
+.avatar--hero { width: 84px; height: 84px; padding: 3px; }
+.avatar--hero img { border-width: 3px; }
+.brand { gap: 10px; }
+.brand__word { display: flex; flex-direction: column; align-items: flex-start; line-height: 1; }
+.brand__luar { font-family: var(--font-script); font-size: 29px; line-height: .9; color: var(--rose); }
+.brand__mu { font-family: var(--font-body, inherit); font-size: 9.5px; font-weight: 700; letter-spacing: .34em; text-transform: uppercase; color: var(--ink); margin-top: 1px; padding-left: 2px; }
+.topbar .wrap { height: 60px; }
+.topact { display: flex; align-items: center; gap: 6px; }
+.topicon { display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; color: var(--ink); border: 1.5px solid var(--line); background: #fff; }
+.topicon:hover { color: var(--rose); border-color: var(--rose-line); }
+.topicon .ico { width: 20px; height: 20px; }
+.cartbtn { padding: 9px 12px; }
+.cartbtn__txt { display: none; }
+
+/* Apresentação compacta: logo + marca + preço fixo numa só dobra, produtos logo abaixo */
+.hero .wrap { gap: 14px; padding-top: 16px; padding-bottom: 18px; }
+.hero__id { display: flex; align-items: center; gap: 14px; }
+.hero__copy { min-width: 0; }
+.hero__script { font-size: 22px; margin: 0 0 2px; }
+.hero h1 { margin: 0; line-height: .95; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: inherit; }
+.lockup__luar { font-family: var(--font-script); font-size: 46px; color: var(--ink); line-height: 1; }
+.lockup__mu { font-size: 12px; font-weight: 700; letter-spacing: .36em; text-transform: uppercase; color: var(--rose); }
+.hero p.lead { font-size: 14.5px; margin-top: 4px; }
+.hero__cta { margin-top: 10px; gap: 8px; }
+.hero__cta .btn-small { padding: 6px 12px; min-height: 38px; font-size: 13px; }
+.hero__moon { right: -60px; top: -60px; width: 220px; height: 220px; }
+.plaque { display: flex; align-items: baseline; justify-content: center; gap: 10px; flex-wrap: wrap; max-width: none; padding: 10px 16px; border-radius: 14px; box-shadow: 0 0 0 1px #8a5646, var(--shadow); }
+.plaque__top, .plaque__each { font-size: 12px; }
+.plaque__price { margin: 0; gap: 5px; }
+.plaque__price small { font-size: 20px; }
+.plaque__price strong { font-size: 40px; }
+.section--first { padding-top: 22px; }
+.section__head--row { flex-direction: row; justify-content: space-between; align-items: flex-end; }
+.textlink { background: none; border: 0; color: var(--rose); font-weight: 700; font-size: 14px; padding: 8px 0; text-decoration: underline; text-underline-offset: 3px; }
+
+@media (min-width: 640px) {
+  .brand__luar { font-size: 33px; }
+  .cartbtn__txt { display: inline; }
+  .avatar--hero { width: 112px; height: 112px; }
+  .lockup__luar { font-size: 68px; }
+  .lockup__mu { font-size: 15px; }
+  .hero__script { font-size: 28px; }
+  .hero p.lead { font-size: 16px; }
+  .hero .wrap { grid-template-columns: 1fr auto; align-items: center; padding-top: 24px; padding-bottom: 26px; }
+  .plaque { flex-direction: column; align-items: center; gap: 2px; padding: 14px 24px; }
+  .plaque__price strong { font-size: 56px; }
+}
+@media (min-width: 900px) { .nav { display: flex; gap: 22px; } }
+
+/* Mobile: apresentação ainda mais enxuta (a logo já aparece no cabeçalho) */
+@media (max-width: 639px) {
+  .avatar--hero { display: none; }
+  .hero__script { font-size: 20px; }
+  .hero h1 { margin-bottom: 2px; }
+  .lockup__luar { font-size: 40px; }
+  .hero p.lead { display: none; }
+  .hero__cta { flex-wrap: nowrap; margin-top: 8px; }
+  .hero__cta .btn-small { flex: 1 1 0; justify-content: center; padding: 6px 8px; }
+  .hero .wrap { gap: 12px; padding-top: 12px; padding-bottom: 14px; }
+  .plaque { padding: 8px 14px; }
+  .plaque__price strong { font-size: 36px; }
+  .section--first { padding-top: 16px; }
+  .section--first .section__head { margin-bottom: 12px; }
 }

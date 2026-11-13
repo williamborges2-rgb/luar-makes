@@ -4,7 +4,7 @@ import { friendlyError } from '../lib/errors.js';
 import { parsePhone, parseInstagram } from '../lib/settings.js';
 import { hasStockInfo, isLowStock } from '../lib/stock.js';
 import { esc, $ } from './dom.js';
-import { icon, icon2, brandMark } from './icons.js';
+import { icon, icon2, brandHtml } from './icons.js';
 import { productImageHtml, placeholderHtml } from './placeholder.js';
 
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -37,7 +37,7 @@ export function mountAdmin(root, ctx) {
   /* ---------- Entrada ---------- */
   function loginHtml() {
     const preview = store.mode !== 'supabase';
-    return `<div class="admin"><div class="admin__bar"><div class="wrap"><div class="brand">${brandMark}<span class="brand__name">${esc(STORE.name)}</span></div><button class="btn btn-small btn-ghost" data-action="back">${icon.back} Voltar à loja</button></div></div>
+    return `<div class="admin"><div class="admin__bar"><div class="wrap"><div class="brand">${brandHtml}</div><button class="btn btn-small btn-ghost" data-action="back">${icon.back} Voltar à loja</button></div></div>
     <div class="wrap"><div class="login">
       <div><h1>Área da loja</h1><p class="fine">Produtos, estoque, categorias e configurações.</p></div>
       ${preview ? `
@@ -192,7 +192,7 @@ export function mountAdmin(root, ctx) {
   const TABS = [['produtos', 'Produtos', icon2.box], ['categorias', 'Categorias', icon2.tag], ['config', 'Configurações', icon2.settings]];
   function panelHtml() {
     return `<div class="admin"><div class="admin__bar"><div class="wrap">
-      <div class="brand">${brandMark}<span class="brand__name">${esc(STORE.name)}</span><small>&nbsp;· administração</small></div>
+      <div class="brand">${brandHtml}<small>&nbsp;· administração</small></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><small>${esc(st.user?.email || '')}</small>
         <button class="btn btn-small btn-ghost" data-action="back">${icon.back} Ver a loja</button>
         <button class="btn btn-small btn-gold" data-action="logout">Sair</button></div>

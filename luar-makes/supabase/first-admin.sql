@@ -5,7 +5,7 @@
 -- 2) Troque o e-mail abaixo pelo MESMO e-mail do usuário criado e rode no SQL Editor.
 -- =====================================================================
 insert into public.admins (user_id)
-select id from auth.users where lower(email) = lower('paginasdavidareal2@gmail.com')
+select id from auth.users where lower(email) = lower('TROQUE-PELO-EMAIL-DA-DONA@exemplo.com')
 on conflict (user_id) do nothing;
 
 -- Conferência: deve listar 1 linha com o e-mail da dona.

@@ -2,8 +2,8 @@
 // Telefone, Instagram, endereço e instruções podem ser alterados no painel (#admin > Configurações),
 // sem mexer no código. Os valores abaixo são usados enquanto nada foi salvo (ou no modo demonstração).
 export const STORE = {
-  name: 'Luar Makes',
-  tagline: 'Realce sua luz',
+  name: 'Luar Make Up',
+  tagline: 'Realce sua luz!',
   city: 'Florianópolis/SC',
 };
 

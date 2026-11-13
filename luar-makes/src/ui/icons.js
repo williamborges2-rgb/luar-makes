@@ -1,3 +1,4 @@
+import logoUrl from '../assets/logo-luar.webp';
 const line = (body, cls = 'ico') =>
   `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 const fill = (body, vb = '0 0 32 32', cls = 'ico') =>
@@ -33,3 +34,8 @@ export const icon2 = {
   box: line('<path d="M4 8l8-4 8 4-8 4z"/><path d="M4 8v8l8 4 8-4V8M12 12v8"/>'),
   alert: line('<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17.4v.1"/>'),
 };
+
+/** Logo da loja (imagem de perfil) em círculo com aro rose gold, no estilo do Instagram. */
+export const brandAvatar = (cls = '') => `<span class="avatar ${cls}"><img src="${logoUrl}" alt="" width="360" height="360" decoding="async"></span>`;
+/** Marca no cabeçalho: avatar + "Luar" em letra cursiva + "MAKE UP". */
+export const brandHtml = `${brandAvatar()}<span class="brand__word"><span class="brand__luar">Luar</span><span class="brand__mu">Make Up</span></span>`;
