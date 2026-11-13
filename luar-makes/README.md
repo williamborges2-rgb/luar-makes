@@ -256,6 +256,16 @@ No iPhone não existe botão automático de instalar: o próprio sistema exige e
 3. **Não** mexa nas variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` do Netlify: elas continuam valendo.
 4. Quem já instalou recebe a versão nova na próxima vez que abrir o app com internet (o app fecha e abre de novo para atualizar por completo).
 
+### Estoque baixo: "Últimas X unidades"
+
+A loja já tinha o controle de estoque no painel (campo por produto, com `null` = sem limite e um número = unidades disponíveis) e um alerta configurável em **Configurações → Alerta de estoque baixo**. O limite padrão é **3 unidades**, que é a faixa mais usada no mercado para esse aviso (a maioria das lojas usa de 3 a 5; muita gente usa um segundo nível ainda mais forte em 1-2 unidades, "quase esgotado").
+
+O que mudou agora:
+- No site, o aviso ficou mais visível: um selo colorido no canto da foto do produto (além do texto perto do preço), com o texto **"Última unidade!"** ou **"Últimas N unidades!"**.
+- Abaixo de 3 unidades o selo é âmbar; com 1 ou 2 unidades ele fica vermelho, mais chamativo — é o padrão que a maioria das lojas usa para o aviso mais urgente.
+- Quando o produto também está em Destaque, os dois selos empilham no canto, sem se sobrepor.
+- No painel administrador nada mudou de posição: a lista de produtos já mostra "Estoque baixo: N" e o aviso "X produtos com estoque baixo" continua lá, do jeito que a dona já usa.
+
 ### Como conferir
 - **Computador (Chrome):** abra o site publicado, F12 → aba *Application* → *Manifest* (sem erros, ícones aparecem) e *Service Workers* (status *activated*). O ícone de instalar aparece na barra de endereço.
 - **Android:** abra no Chrome ou no Samsung Internet: o botão **Instalar** (ícone de celular) aparece no cabeçalho e, com o convite nativo disponível, a confirmação do próprio navegador abre direto ao tocar. Depois de instalar, abra pelo ícone: abre sem barra do navegador.

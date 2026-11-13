@@ -145,14 +145,19 @@ ${modeBar()}
 function cardHtml(p) {
   const ok = isOrderable(p);
   const st = stockState(p, state.settings.low_stock_threshold);
+  const low = ok && st === 'low';
+  // Dentro do limite de "estoque baixo" da loja, 1-2 unidades é tratado como o grau mais
+  // urgente (como a maioria das lojas faz: um aviso mais forte bem perto do fim do estoque).
+  const critical = low && p.stock <= 2;
+  const stockText = p.stock === 1 ? 'Última unidade!' : `Últimas ${p.stock} unidades!`;
   const label = !p.available ? 'Indisponível' : 'Esgotado';
   return `<article class="card${ok ? '' : ' is-out'}">
-    <div class="card__media">${productImageHtml(p, store.mode)}${p.featured && ok ? '<span class="tag">Destaque</span>' : ''}${ok ? '' : `<span class="out">${label}</span>`}</div>
+    <div class="card__media">${productImageHtml(p, store.mode)}<div class="card__badges">${p.featured && ok ? '<span class="tag">Destaque</span>' : ''}${low ? `<span class="tag tag--stock${critical ? ' tag--critical' : ''}">${icon.spark}${stockText}</span>` : ''}</div>${ok ? '' : `<span class="out">${label}</span>`}</div>
     <div class="card__body">
       <span class="card__cat">${esc(p.category)}</span>
       <h3 class="card__name">${esc(p.name)}</h3>
       ${p.description ? `<p class="card__desc">${esc(p.description)}</p>` : ''}
-      ${ok && st === 'low' ? `<p class="card__stock">${p.stock === 1 ? 'Última unidade' : `Restam ${p.stock} unidades`}</p>` : ''}
+      ${low ? `<p class="card__stock${critical ? ' card__stock--critical' : ''}">${stockText}</p>` : ''}
       <div class="card__foot">
         <span class="price"><small>R$</small>10,00</span>
         <button class="btn btn-add" data-action="add" data-id="${esc(p.id)}" ${ok ? '' : 'disabled'}>${ok ? 'Adicionar ao carrinho' : label}</button>

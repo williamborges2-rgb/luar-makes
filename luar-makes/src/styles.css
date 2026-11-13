@@ -138,14 +138,21 @@ h2.title::after { content: ''; display: block; width: 54px; height: 2px; margin-
 .card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
 .card__media { position: relative; aspect-ratio: 1 / 1; background: var(--blush-100); }
 .card__media img { width: 100%; height: 100%; object-fit: cover; }
-.card .tag { position: absolute; left: 8px; top: 8px; background: var(--ink); color: #f6d9cc; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 4px 9px; border-radius: 6px; }
+.card__badges { position: absolute; left: 8px; top: 8px; right: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.card .tag { background: var(--ink); color: #f6d9cc; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 4px 9px; border-radius: 6px; }
 .card .out { position: absolute; inset: auto 8px 8px 8px; text-align: center; background: rgba(42, 23, 19, .9); color: #fff3ec; font-size: 12.5px; font-weight: 600; padding: 6px 8px; border-radius: 8px; }
+/* Selo de estoque baixo: empilha abaixo de "Destaque" quando os dois aparecem, nunca sobrepõe.
+   Dois tons: âmbar para poucas unidades, vermelho quando está no fim mesmo (1-2 unidades). */
+.card .tag--stock { display: inline-flex; align-items: center; gap: 4px; background: #c9790f; color: #fff6e9; }
+.card .tag--stock .ico-spark { width: 10px; height: 10px; color: inherit; flex: none; }
+.card .tag--critical { background: #b53a2e; color: #fff0ec; }
 .card.is-out .card__media img, .card.is-out .ph { filter: grayscale(.75); opacity: .6; }
 .card__body { display: flex; flex-direction: column; gap: 4px; padding: 12px; flex: 1; }
 .card__cat { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--rose); font-weight: 600; }
 .card__name { font-size: 14.5px; font-weight: 600; line-height: 1.3; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 3.9em; }
 .card__desc { margin: 0; font-size: 13px; color: var(--muted); }
-.card__stock { margin: 0; font-size: 12.5px; font-weight: 600; color: #8a4a12; }
+.card__stock { margin: 0; display: inline-flex; align-items: center; gap: 5px; width: fit-content; font-size: 12px; font-weight: 700; color: #92520b; background: #fdecd3; padding: 3px 9px; border-radius: 999px; }
+.card__stock--critical { color: #8a241a; background: #fbdfda; }
 .card__foot { margin-top: auto; padding-top: 8px; display: grid; gap: 8px; }
 .price { font-size: 25px; font-weight: 800; line-height: 1; color: var(--ink); }
 .price small { font-size: 14px; font-weight: 700; margin-right: 3px; }
