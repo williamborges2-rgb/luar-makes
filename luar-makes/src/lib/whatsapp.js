@@ -30,7 +30,7 @@ export function buildOrderMessage({ lines, fulfillment = 'pickup', notes = '', s
   out.push(`Olá, ${STORE.name}! Quero fazer um pedido:`);
   out.push('');
   lines.forEach((l, i) => {
-    out.push(`${i + 1}. ${l.name}`);
+    out.push(`${i + 1}. ${l.name}${l.color ? ` — cor: ${l.color}` : ''}`);
     out.push(`   ${l.qty} × ${formatBRL(PRICE_CENTS)} = ${formatBRL(lineTotalCents(l))}`);
   });
   out.push('');

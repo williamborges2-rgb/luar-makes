@@ -7,9 +7,10 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const products = JSON.parse(readFileSync(join(root, 'src/data/demo-products.json'), 'utf8'));
 const q = (s) => `'${String(s).replace(/'/g, "''")}'`;
+const jsonb = (v) => `${q(JSON.stringify(v ?? []))}::jsonb`;
 
 const rows = products.map((p, i) =>
-  `  (${q(p.name)}, ${q(p.description || '')}, ${q(p.category)}, ${p.image_url ? q(p.image_url) : 'null'}, ${p.available !== false}, ${!!p.featured}, ${p.stock === null || p.stock === undefined ? 'null::integer' : p.stock}, true, ${p.sort_order ?? i})`);
+  `  (${q(p.name)}, ${q(p.description || '')}, ${q(p.category)}, ${p.image_url ? q(p.image_url) : 'null'}, ${p.available !== false}, ${!!p.featured}, ${p.stock === null || p.stock === undefined ? 'null::integer' : p.stock}, true, ${p.sort_order ?? i}, ${jsonb(p.colors)})`);
 
 const sql = `-- =====================================================================
 -- Produtos de EXEMPLO da Luar Makes (gerado por scripts/make-seed.mjs)
@@ -24,11 +25,11 @@ const sql = `-- ================================================================
 -- e fotos reais da loja. O preço não é informado: o banco aplica R$ 10,00 a todos.
 -- Estoque nulo = não informado (sem limite no carrinho): a loja ainda não registrou quantidades.
 -- =====================================================================
-insert into public.products (name, description, category, image_url, available, featured, stock, is_demo, sort_order)
+insert into public.products (name, description, category, image_url, available, featured, stock, is_demo, sort_order, colors)
 select v.*
 from (values
 ${rows.join(',\n')}
-) as v(name, description, category, image_url, available, featured, stock, is_demo, sort_order)
+) as v(name, description, category, image_url, available, featured, stock, is_demo, sort_order, colors)
 where not exists (select 1 from public.products);
 `;
 writeFileSync(join(root, 'supabase/seed.sql'), sql);

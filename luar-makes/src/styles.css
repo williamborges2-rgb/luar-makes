@@ -138,13 +138,15 @@ h2.title::after { content: ''; display: block; width: 54px; height: 2px; margin-
 .card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
 .card__media { position: relative; aspect-ratio: 1 / 1; background: var(--blush-100); }
 .card__media img { width: 100%; height: 100%; object-fit: cover; }
-.card__badges { position: absolute; left: 8px; top: 8px; right: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
-.card .tag { background: var(--ink); color: #f6d9cc; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 4px 9px; border-radius: 6px; }
+/* Selos na foto: pequenos e lado a lado de propósito — no celular (nosso uso principal) a
+   imagem do produto já é pequena, então aqui é só um aviso rápido, não um banner. A frase
+   completa ("Últimas N unidades!") fica no texto abaixo do nome, com largura de sobra. */
+.card__badges { position: absolute; left: 6px; top: 6px; right: 6px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; max-height: 24px; overflow: hidden; }
+.card .tag { background: var(--ink); color: #f6d9cc; font-size: 9.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; line-height: 1.3; white-space: nowrap; }
 .card .out { position: absolute; inset: auto 8px 8px 8px; text-align: center; background: rgba(42, 23, 19, .9); color: #fff3ec; font-size: 12.5px; font-weight: 600; padding: 6px 8px; border-radius: 8px; }
-/* Selo de estoque baixo: empilha abaixo de "Destaque" quando os dois aparecem, nunca sobrepõe.
-   Dois tons: âmbar para poucas unidades, vermelho quando está no fim mesmo (1-2 unidades). */
-.card .tag--stock { display: inline-flex; align-items: center; gap: 4px; background: #c9790f; color: #fff6e9; }
-.card .tag--stock .ico-spark { width: 10px; height: 10px; color: inherit; flex: none; }
+/* Dois tons: âmbar para poucas unidades, vermelho quando está no fim mesmo (1-2 unidades). */
+.card .tag--stock { display: inline-flex; align-items: center; gap: 3px; background: #c9790f; color: #fff6e9; }
+.card .tag--stock .ico-spark { width: 8px; height: 8px; color: inherit; flex: none; }
 .card .tag--critical { background: #b53a2e; color: #fff0ec; }
 .card.is-out .card__media img, .card.is-out .ph { filter: grayscale(.75); opacity: .6; }
 .card__body { display: flex; flex-direction: column; gap: 4px; padding: 12px; flex: 1; }
@@ -153,6 +155,17 @@ h2.title::after { content: ''; display: block; width: 54px; height: 2px; margin-
 .card__desc { margin: 0; font-size: 13px; color: var(--muted); }
 .card__stock { margin: 0; display: inline-flex; align-items: center; gap: 5px; width: fit-content; font-size: 12px; font-weight: 700; color: #92520b; background: #fdecd3; padding: 3px 9px; border-radius: 999px; }
 .card__stock--critical { color: #8a241a; background: #fbdfda; }
+/* Seletor de cor do card: bolinha colorida quando a loja informou o código da cor (--sw),
+   chip de texto quando não (ex.: "Estampada"). Toque confortável mesmo lado a lado no celular. */
+.colorpick { margin-top: 2px; }
+.colorpick__row { display: flex; flex-wrap: wrap; gap: 7px; }
+.swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1.5px var(--line); background: var(--sw, var(--blush-100)); padding: 0; flex: none; }
+.swatch.is-active { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--rose); }
+.swatch--text { width: auto; height: 30px; min-width: 44px; border-radius: 999px; padding: 0 10px; font-size: 11.5px; font-weight: 700; color: var(--ink-2); background: var(--surface); box-shadow: 0 0 0 1.5px var(--line); }
+.swatch--text.is-active { color: var(--rose); box-shadow: 0 0 0 1.5px var(--rose); }
+.colorpick__status { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+.colorpick__status b { color: var(--ink); }
+.line__color { display: block; font-size: 12.5px; color: var(--muted); font-weight: 500; margin-top: 2px; }
 .card__foot { margin-top: auto; padding-top: 8px; display: grid; gap: 8px; }
 .price { font-size: 25px; font-weight: 800; line-height: 1; color: var(--ink); }
 .price small { font-size: 14px; font-weight: 700; margin-right: 3px; }
@@ -270,10 +283,15 @@ fieldset.opts legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
 .priceLock { display: flex; gap: 10px; align-items: center; background: var(--ink); color: var(--on-dark); border-radius: 12px; padding: 10px 14px; font-weight: 600; }
 .priceLock .ico { color: #f0c8b8; }
 .priceLock small { font-weight: 400; color: var(--on-dark-2); display: block; }
-.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--blush-100); border-radius: 14px; padding: 4px; }
-.tab { border: 0; background: none; border-radius: 10px; padding: 10px 6px; font-weight: 600; font-size: 14px; color: var(--ink-2); display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 46px; }
+/* Todas as abas dividem o espaço igualmente e ficam visíveis de uma vez — nenhuma fica
+   escondida atrás de um deslize. Em telas estreitas o texto encolhe e pode quebrar em
+   duas linhas em vez de ser cortado ou empurrar as outras abas pra fora. */
+.tabs { display: flex; gap: 4px; background: var(--blush-100); border-radius: 14px; padding: 4px; }
+.tab { position: relative; flex: 1 1 0; min-width: 0; border: 0; background: none; border-radius: 10px; padding: 8px 4px; font-weight: 600; font-size: 12.5px; color: var(--ink-2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 50px; white-space: normal; line-height: 1.15; text-align: center; }
+.tab span { overflow-wrap: break-word; }
 .tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px rgba(60, 30, 20, .15); }
 .tab .ico { width: 1.1em; height: 1.1em; }
+.tabdot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 2px var(--blush-100); }
 .adminhead { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .adminhead h1 { font-family: var(--font-display); font-size: 32px; margin: 0; line-height: 1; }
 .filters { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; gap: 10px; }
@@ -328,6 +346,34 @@ fieldset.opts legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
 .crow__btns .iconbtn { width: 44px; height: 44px; }
 .addcat { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
 .stockbox { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.colorsbox { display: grid; gap: 8px; }
+
+/* Cores prontas (chips): tocar adiciona na hora, sem digitar nada. "Outra cor" cria uma linha
+   personalizada em branco. Cabem várias por linha mesmo num celular estreito. */
+.colorPresets { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 4px; }
+.presetChip { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px 5px 5px; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+.presetChip[disabled] { opacity: .55; cursor: not-allowed; }
+.presetChip.is-added { border-color: var(--rose-line); background: var(--rose-bg, var(--blush-100)); color: var(--rose); }
+.presetChip__dot { width: 22px; height: 22px; border-radius: 50%; flex: none; background: var(--sw, var(--blush-100)); box-shadow: 0 0 0 1.5px var(--line) inset; display: grid; place-items: center; color: #fff; }
+.presetChip__dot .ico { width: 13px; height: 13px; }
+.presetChip--text .presetChip__dot { background: var(--surface); box-shadow: 0 0 0 1.5px var(--line) inset, 0 0 0 1px var(--line); }
+.presetChip--custom { border-style: dashed; }
+.presetChip__dot--plus { background: var(--blush-100); color: var(--rose); font-size: 15px; font-weight: 800; line-height: 1; }
+
+/* Linhas já adicionadas: bolinha = input de cor nativo (abre a paleta do aparelho ao tocar),
+   nome, remover; e um link pequeno pra tirar/pôr a cor exata (produtos "sortidos"/"estampados"
+   só têm o nome, sem bolinha de cor). */
+.colorrows { display: grid; gap: 8px; margin: 2px 0 8px; }
+.colorrow { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px; display: grid; gap: 4px; }
+.colorrow__main { display: flex; align-items: center; gap: 8px; }
+.colorrow__picker { -webkit-appearance: none; appearance: none; width: 34px; height: 34px; flex: none; padding: 0; border: none; border-radius: 50%; background: none; cursor: pointer; }
+.colorrow__picker::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; }
+.colorrow__picker::-webkit-color-swatch { border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1.5px var(--line); }
+.colorrow__picker::-moz-color-swatch { border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1.5px var(--line); }
+.colorrow__picker[disabled] { opacity: .3; cursor: not-allowed; }
+.colorrow__name { flex: 1 1 auto; min-width: 0; min-height: 40px; padding: 6px 10px; font-size: 13.5px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); }
+.colorrow .btn { min-height: 40px; padding: 0 10px; flex: none; }
+.colorrow__hexToggle { justify-self: start; border: 0; background: none; padding: 2px 4px; font-size: 12px; font-weight: 600; color: var(--rose); text-decoration: underline; text-underline-offset: 2px; }
 
 /* ---------- Telas maiores ---------- */
 @media (min-width: 640px) {
@@ -361,8 +407,8 @@ fieldset.opts legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
   .drawer.open { transform: translateX(0); }
   .filters__row { grid-template-columns: repeat(4, 1fr); }
   .filters .search { grid-column: auto; max-width: 420px; }
-  .tabs { width: fit-content; grid-template-columns: repeat(3, auto); }
-  .tab { padding: 10px 22px; }
+  .tabs { width: fit-content; }
+  .tab { flex: 0 0 auto; flex-direction: row; padding: 10px 22px; font-size: 14px; white-space: nowrap; }
 }
 
 /* ===== Identidade Luar Make Up (alinhada ao Instagram @luarmakeup10) ===== */
@@ -480,3 +526,11 @@ fieldset.opts legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
 @media (min-width: 640px) { .sheetwrap { align-items: center; } .sheet { border-radius: 22px; } }
 .offbar { position: fixed; left: 0; right: 0; top: 0; z-index: 90; background: var(--warn-bg); color: var(--warn-ink); text-align: center; font-size: 13.5px; font-weight: 600; padding: 8px 12px; border-bottom: 1px solid #e6cf9f; }
 .offbar[hidden] { display: none; }
+
+/* ---------- Aba "Novidades" do painel ---------- */
+.newsTab { display: grid; gap: 14px; }
+.newsItem { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 8px; }
+.newsItem__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.newsItem__date { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.newsItem h3 { margin: 0; font-size: 17px; line-height: 1.3; }
+.newsItem ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--ink-2); font-size: 14.5px; }

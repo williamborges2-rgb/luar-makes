@@ -39,7 +39,7 @@ Você não precisa ter nada pronto. O plano gratuito atende uma loja pequena.
 ### 2.2 Criar as tabelas, as regras de segurança e o espaço das fotos
 1. No menu lateral, abra **SQL Editor** → **New query**.
 2. Abra o arquivo `supabase/schema.sql` deste projeto, copie **tudo**, cole no editor e clique em **Run**. Deve aparecer *Success*.
-   Esse arquivo cria as tabelas de produtos, categorias e configurações, as regras de acesso, o espaço de fotos (`product-images`) e **trava o preço em R$ 10,00 no próprio banco**. Ele pode ser rodado de novo sem problema (também atualiza bancos criados pela versão anterior).
+   Esse arquivo cria as tabelas de produtos, categorias e configurações, as regras de acesso, o espaço de fotos (`product-images`) e **trava o preço em R$ 10,00 no próprio banco**. Ele pode ser rodado de novo sem problema (também atualiza bancos criados pela versão anterior) — por exemplo, se o banco já existia antes das **opções de cor**, rodar de novo só adiciona a coluna que faltava (`colors`), sem apagar nenhum produto cadastrado.
 3. (Opcional, recomendado) Em outra query, cole `supabase/seed.sql` e clique em **Run** para carregar os 22 produtos de exemplo. Só insere se a tabela estiver vazia.
 
 ### 2.3 Criar o usuário da administradora
@@ -113,7 +113,9 @@ Nas três hospedagens há uma tela para ligar um domínio (ex.: `luarmakes.com.b
 
 Abra `https://SEU-SITE/#admin` (também há o link **Área da loja** no rodapé) e entre com e-mail e senha.
 
-Há três abas: **Produtos**, **Categorias** e **Configurações**.
+Há quatro abas: **Produtos**, **Categorias**, **Configurações** e **Novidades** (o que mudou no site a cada atualização — quem cuida da loja no dia a dia não precisa perguntar pra ninguém; um ponto vermelho avisa quando tem novidade não vista ainda). No celular, as quatro cabem lado a lado sem precisar deslizar.
+
+Nas telas de **Novo produto**, **Editar produto** e **Renomear categoria** (e nas confirmações de remover): o campo de nome **não abre o teclado sozinho** ao abrir a tela — só quando a pessoa toca nele, já que nem sempre quem abre a edição quer mexer no nome. E o botão **voltar do celular** fecha a tela de edição e mantém a pessoa no painel; só um segundo toque em voltar é que sai de fato para a loja.
 
 **Produtos**
 - **Novo produto:** nome, descrição curta, categoria, unidades em estoque, foto, disponível, destaque.
@@ -129,6 +131,14 @@ Há três abas: **Produtos**, **Categorias** e **Configurações**.
 - O estoque **não diminui sozinho** quando uma cliente abre o WhatsApp, porque a mensagem ainda não é uma venda confirmada. A dona atualiza o número depois de confirmar o pedido. Não há integração de pedidos confirmados nesta versão.
 - O limite vale na tela da cliente. Como o pedido sai como mensagem de WhatsApp (nada é gravado), ele não impede que duas clientes peçam a mesma última unidade ao mesmo tempo: a confirmação continua sendo da dona.
 
+**Cores**
+- No formulário do produto, em *Opções de cor*, toque numa das cores prontas (as mais comuns em maquiagem — nude, rosa, vinho, coral...) para adicionar na hora, sem digitar nada. Elas já aparecem marcadas se já estiverem na lista — **tocar de novo numa cor já marcada tira a seleção dela** (não precisa descer até a linha da cor e excluir pelo botão de lixeira).
+- Para uma cor que não está pronta, toque em **Outra cor**, escreva o nome e toque na bolinha para abrir o seletor de cor do próprio celular/computador (que já vem com paleta e também deixa ajustar a cor fino).
+- Uma cor pode ficar só com o nome, sem bolinha de cor (ex.: "Estampada", "Sortida") — é o link *Definir uma cor exata* / *Remover cor exata* embaixo do nome, em cada linha.
+- Se o produto **não tem** cor para escolher (pincéis, esponjas, toalhinhas sem estampa...), deixe a lista vazia: a vitrine não mostra seletor nenhum e a cliente compra direto.
+- Quando há cores cadastradas, a cliente **precisa escolher uma** antes do botão virar "Adicionar ao carrinho" (antes disso ele mostra "Escolha uma cor" e fica desabilitado).
+- Cada cor escolhida vira uma linha separada no carrinho e na mensagem do WhatsApp (ex.: *"1. Batom 24H — cor: Nude"*). Quando há **estoque** informado, ele é compartilhado entre as cores do mesmo produto (a soma de todas as cores não passa do número cadastrado).
+
 **Categorias**
 - Criar, renomear (os produtos acompanham o novo nome), mudar a ordem (setas) e remover. Não dá para remover uma categoria que ainda tem produtos: mude esses produtos de categoria antes.
 - A ordem daqui é a ordem na loja. Categorias sem produtos não aparecem para as clientes (por isso *Brincos* só aparece quando houver algum brinco cadastrado).
@@ -136,6 +146,9 @@ Há três abas: **Produtos**, **Categorias** e **Configurações**.
 **Configurações** (valem na loja na hora, sem alterar o código)
 - WhatsApp (com DDD), Instagram (`@usuario` ou link), endereço, instruções de retirada, instruções de entrega e limite de estoque baixo.
 - Os pedidos passam a abrir a conversa com o WhatsApp salvo aqui. Não prometa horários, prazos ou entrega grátis que a loja não possa cumprir.
+
+**Novidades**
+- Lista só de leitura com o que mudou em cada atualização do site, escrita para quem cuida da loja (não é um log técnico). Quem desenvolve o site mantém essa lista em código, em `CHANGELOG` no início de `src/ui/admin.js` — a cada atualização publicada, um item novo entra no **topo** da lista, e o ponto vermelho na aba aparece sozinho até alguém abrir a aba.
 
 ### Como trocar produtos e imagens de exemplo
 1. No painel, clique em **Remover produtos de exemplo** (aparece enquanto houver algum). Isso apaga só os produtos marcados como exemplo e mantém os que ela cadastrou.
@@ -191,7 +204,9 @@ index.html               página
 src/main.js              vitrine, carrinho, rotas
 src/config.js            marca, valores iniciais da loja, preço
 src/fonts/               algarismos nítidos (Inter, só 0–9)
-src/lib/cart.js          carrinho (qtd × R$ 10,00, limite de estoque)
+src/lib/cart.js          carrinho (qtd × R$ 10,00, limite de estoque, cor escolhida)
+src/lib/colors.js        opções de cor do produto (validação, limite de 10 cores)
+src/lib/colorPresets.js  cores prontas do nicho de maquiagem, pra escolher sem digitar código
 src/lib/stock.js         regras de estoque e alerta de estoque baixo
 src/lib/settings.js      configurações da loja, WhatsApp e Instagram
 src/lib/whatsapp.js      mensagem e link do WhatsApp
@@ -204,6 +219,7 @@ supabase/seed.sql        produtos de exemplo (gerado)
 supabase/first-admin.sql primeira administradora
 scripts/fetch-images.mjs baixa as fotos de exemplo para public/products/
 tests/order.test.mjs     testes do total, estoque, configurações e mensagem
+tests/colors.test.mjs    testes das opções de cor, estoque compartilhado entre cores e WhatsApp
 ```
 
 Comandos: `npm run dev` · `npm run build` · `npm test` · `npm run images` · `npm run seed:sql` · `npm run build:prototype` (gera um HTML único em `dist-prototype/`, usado no protótipo do Claude).

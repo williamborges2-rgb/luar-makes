@@ -33,6 +33,7 @@ export const icon2 = {
   tag: line('<path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9z"/><circle cx="8.5" cy="8.5" r="1.3"/>'),
   box: line('<path d="M4 8l8-4 8 4-8 4z"/><path d="M4 8v8l8 4 8-4V8M12 12v8"/>'),
   alert: line('<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17.4v.1"/>'),
+  bell: line('<path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6z"/><path d="M9.5 19a2.6 2.6 0 0 0 5 0"/>'),
 };
 
 /** Logo da loja (imagem de perfil) em círculo com aro rose gold, no estilo do Instagram. */

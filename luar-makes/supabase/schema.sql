@@ -39,6 +39,9 @@ create table if not exists public.products (
   featured    boolean not null default false,
   -- ESTOQUE: null = a dona não informou (sem limite no carrinho); número = unidades disponíveis.
   stock       integer          check (stock is null or stock >= 0),
+  -- CORES: lista opcional de opções (ex.: [{"name":"Rosa","hex":"#e9a4b0"}]). null/[] = produto sem
+  -- opção de cor. "hex" é opcional (sem ele, a cor aparece só como texto, sem a bolinha colorida).
+  colors      jsonb    not null default '[]'::jsonb check (jsonb_typeof(colors) = 'array'),
   is_demo     boolean not null default false,   -- marca os produtos de exemplo
   sort_order  integer not null default 0,
   created_at  timestamptz not null default now(),
@@ -47,6 +50,9 @@ create table if not exists public.products (
 
 -- Bancos criados pela versão anterior deste arquivo: acrescenta o que faltava (seguro repetir).
 alter table public.products add column if not exists stock integer check (stock is null or stock >= 0);
+alter table public.products add column if not exists colors jsonb not null default '[]'::jsonb;
+alter table public.products drop constraint if exists products_colors_check;
+alter table public.products add constraint products_colors_check check (jsonb_typeof(colors) = 'array');
 -- Aceita link https:// ou caminho do próprio site (ex.: /products/gloss.webp, quando as fotos ficam na pasta public).
 alter table public.products drop constraint if exists products_image_url_check;
 alter table public.products add constraint products_image_url_check

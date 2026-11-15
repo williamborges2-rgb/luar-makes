@@ -1,6 +1,7 @@
 import demo from '../data/demo-products.json';
 import { DEFAULT_CATEGORIES } from '../config.js';
 import { normalizeSettings } from './settings.js';
+import { normalizeColors } from './colors.js';
 
 /**
  * Dados de demonstração, só em memória. Serve para o protótipo e para rodar o site
@@ -36,6 +37,7 @@ export function createDemoStore(mode) {
         name: p.name, description: p.description || '', category: p.category,
         image_url: p.image_url || '', available: !!p.available, featured: !!p.featured,
         stock: p.stock === null || p.stock === undefined ? null : p.stock,
+        colors: normalizeColors(p.colors),
       };
       if (p.id) {
         rows = rows.map((r) => (r.id === p.id ? { ...r, ...clean } : r));

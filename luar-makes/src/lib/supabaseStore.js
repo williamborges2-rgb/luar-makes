@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { IMAGE_BUCKET } from '../config.js';
 import { NotAdminError } from './errors.js';
 import { shrinkImage } from './image.js';
+import { normalizeColors } from './colors.js';
 
 /**
  * Persistência real no Supabase.
@@ -72,6 +73,7 @@ export function createSupabaseStore(url, anonKey) {
         name: p.name, description: p.description || '', category: p.category,
         image_url: p.image_url || null, available: !!p.available, featured: !!p.featured,
         stock: p.stock === null || p.stock === undefined ? null : p.stock,
+        colors: normalizeColors(p.colors),
       };
       if (p.id) {
         const { data, error } = await sb.from('products').update(clean).eq('id', p.id).select().single();

@@ -3,12 +3,67 @@ import { UNIT_PRICE_LABEL } from '../lib/money.js';
 import { friendlyError } from '../lib/errors.js';
 import { parsePhone, parseInstagram } from '../lib/settings.js';
 import { hasStockInfo, isLowStock } from '../lib/stock.js';
+import { normalizeColors, MAX_COLORS } from '../lib/colors.js';
+import { COLOR_PRESETS } from '../lib/colorPresets.js';
 import { esc, $ } from './dom.js';
 import { icon, icon2, brandHtml } from './icons.js';
 import { productImageHtml, placeholderHtml } from './placeholder.js';
 
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const collator = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true });
+
+/**
+ * Novidades da loja: o que mudou a cada atualização, escrito para quem cuida da loja no
+ * dia a dia (não para programadora). Mais recente primeiro. Ao lançar uma atualização nova,
+ * adicione um item no TOPO desta lista — o ponto vermelho na aba "Novidades" aparece sozinho.
+ */
+const CHANGELOG = [
+  {
+    version: '1.2.1', date: '2026-11-15', title: 'Ajustes de uso no painel',
+    items: [
+      'A aba "Novidades" (esta aqui) estava escondida — tinha que deslizar a barra de abas pro lado pra achar. Agora as quatro abas cabem juntas na tela do celular.',
+      'Escolher uma cor do produto: tocar de novo numa cor já marcada agora tira a seleção dela na hora — antes era preciso descer até a linha da cor e excluir pelo botão de lixeira.',
+      'Botão "voltar" do celular: com a tela de editar ou cadastrar produto (ou categoria) aberta, voltar agora fecha só essa tela e continua no painel, em vez de já sair direto pra loja.',
+      'Tela de editar ou cadastrar produto: o campo de nome não abre mais o teclado sozinho ao abrir a tela — só quando a pessoa toca nele.',
+    ],
+  },
+  {
+    version: '1.2.0', date: '2026-11-15', title: 'Cor do produto mais fácil de cadastrar',
+    items: [
+      'Escolher a cor de um produto ficou bem mais simples: toque numa cor já pronta (as mais usadas em maquiagem) ou monte a sua na paletinha — sem precisar digitar nenhum código.',
+      'Esta aba: toda vez que o site for atualizado, o que mudou aparece aqui.',
+    ],
+  },
+  {
+    version: '1.1.0', date: '2026-11-12', title: 'Opções de cor nos produtos',
+    items: [
+      'Produtos agora podem ter opções de cor: a cliente escolhe a cor na vitrine antes de adicionar ao carrinho, e a cor escolhida já sai na mensagem do WhatsApp.',
+      'O aviso de "últimas unidades" na foto do produto não tampa mais a imagem no celular.',
+    ],
+  },
+];
+const NEWS_SEEN_KEY = 'luar-makes-news-seen';
+function hasUnseenNews() {
+  try { return localStorage.getItem(NEWS_SEEN_KEY) !== CHANGELOG[0].version; } catch { return false; }
+}
+function markNewsSeen() {
+  try { localStorage.setItem(NEWS_SEEN_KEY, CHANGELOG[0].version); } catch { /* sem storage: sem problema */ }
+}
+function formatNewsDate(iso) {
+  const [y, m, d] = String(iso).split('-');
+  return y && m && d ? `${d}/${m}/${y}` : iso;
+}
+function newsTabHtml() {
+  return `<section class="newsTab">
+    <p class="fine">O que mudou no site, pra você saber o que chegou de novo sem precisar perguntar pra quem cuida da loja.</p>
+    ${CHANGELOG.map((r) => `
+      <article class="newsItem">
+        <div class="newsItem__head"><span class="newsItem__date">${esc(formatNewsDate(r.date))}</span><span class="chip">v${esc(r.version)}</span></div>
+        <h3>${esc(r.title)}</h3>
+        <ul>${r.items.map((it) => `<li>${esc(it)}</li>`).join('')}</ul>
+      </article>`).join('')}
+  </section>`;
+}
 
 /**
  * Painel da loja (#admin): produtos, estoque, categorias e configurações.
@@ -19,6 +74,7 @@ export function mountAdmin(root, ctx) {
   const st = {
     user: null, checking: true, flash: null, modal: null, loginError: '', tab: 'produtos',
     f: { q: '', cat: '', avail: '', featured: false, low: false, sort: 'name' },
+    formColors: [], // rascunho das cores do produto sendo editado (ver colorsFieldHtml)
   };
   let alive = true;
 
@@ -92,7 +148,7 @@ export function mountAdmin(root, ctx) {
       <div class="arow__img">${productImageHtml(p, store.mode)}</div>
       <div class="arow__main">
         <div class="arow__name">${esc(p.name)}</div>
-        <div class="arow__meta"><span class="chip">${esc(p.category)}</span><span>${UNIT_PRICE_LABEL}</span>${stockChip(p)}${p.featured ? '<span class="chip">Destaque</span>' : ''}${p.is_demo ? '<span class="chip chip--demo">Exemplo</span>' : ''}${p.available ? '' : '<span class="chip chip--out">Indisponível</span>'}</div>
+        <div class="arow__meta"><span class="chip">${esc(p.category)}</span><span>${UNIT_PRICE_LABEL}</span>${stockChip(p)}${p.colors?.length ? `<span class="chip">${p.colors.length} ${p.colors.length === 1 ? 'cor' : 'cores'}</span>` : ''}${p.featured ? '<span class="chip">Destaque</span>' : ''}${p.is_demo ? '<span class="chip chip--demo">Exemplo</span>' : ''}${p.available ? '' : '<span class="chip chip--out">Indisponível</span>'}</div>
       </div>
       <div class="arow__actions">
         <label class="switch"><input type="checkbox" data-action="toggle" data-id="${esc(p.id)}" ${p.available ? 'checked' : ''}><i></i><span>${p.available ? 'Disponível' : 'Indisponível'}</span></label>
@@ -189,7 +245,7 @@ export function mountAdmin(root, ctx) {
   }
 
   /* ---------- Estrutura ---------- */
-  const TABS = [['produtos', 'Produtos', icon2.box], ['categorias', 'Categorias', icon2.tag], ['config', 'Configurações', icon2.settings]];
+  const TABS = [['produtos', 'Produtos', icon2.box], ['categorias', 'Categorias', icon2.tag], ['config', 'Configurações', icon2.settings], ['novidades', 'Novidades', icon2.bell]];
   function panelHtml() {
     return `<div class="admin"><div class="admin__bar"><div class="wrap">
       <div class="brand">${brandHtml}<small>&nbsp;· administração</small></div>
@@ -199,7 +255,7 @@ export function mountAdmin(root, ctx) {
     </div></div>
     <div class="wrap admin__main">
       ${store.mode !== 'supabase' ? `<div class="alert alert--info" role="note"><span><b>Prévia.</b> Alterações ficam só nesta aba e somem ao recarregar. ${store.mode === 'demo' ? 'Configure o Supabase para salvar de verdade (veja o README).' : 'Na versão publicada, tudo é salvo no Supabase.'}</span></div>` : ''}
-      <div class="tabs" role="tablist" aria-label="Seções do painel">${TABS.map(([id, label, ic]) => `<button class="tab" role="tab" data-action="tab" data-tab="${id}" aria-selected="${st.tab === id}">${ic}<span>${label}</span></button>`).join('')}</div>
+      <div class="tabs" role="tablist" aria-label="Seções do painel">${TABS.map(([id, label, ic]) => `<button class="tab" role="tab" data-action="tab" data-tab="${id}" aria-selected="${st.tab === id}">${ic}<span>${label}</span>${id === 'novidades' && hasUnseenNews() ? '<span class="tabdot" aria-hidden="true"></span>' : ''}</button>`).join('')}</div>
       <div id="flash">${flashHtml()}</div>
       <div id="tabBody" style="display:grid;gap:16px;min-width:0"></div>
     </div>
@@ -209,8 +265,56 @@ export function mountAdmin(root, ctx) {
   function renderTab() {
     const body = $('#tabBody', root);
     if (!body) return;
-    body.innerHTML = st.tab === 'categorias' ? categoriesTabHtml() : st.tab === 'config' ? settingsTabHtml() : productsTabHtml();
+    body.innerHTML = st.tab === 'categorias' ? categoriesTabHtml() : st.tab === 'config' ? settingsTabHtml() : st.tab === 'novidades' ? newsTabHtml() : productsTabHtml();
     if (st.tab === 'produtos') renderList();
+  }
+
+  /* ---------- Cores do produto (lista dinâmica dentro do formulário) ----------
+     Duas formas de escolher, pensadas pra quem não sabe o que é um "código de cor":
+     1) tocar numa cor pronta (as mais comuns em maquiagem) — adiciona na hora, sem digitar nada;
+     2) tocar na bolinha de "montar uma cor" — abre o seletor de cor do próprio celular/computador,
+        que já vem com paleta e também deixa ajustar a cor fino, pra quem quer algo bem específico. */
+  const DEFAULT_ROW_HEX = '#d9a7a0';
+  function presetChipHtml(p, i, colors) {
+    const added = colors.some((c) => norm(c.name) === norm(p.name));
+    const style = p.hex ? ` style="--sw:${esc(p.hex)}"` : '';
+    // Mesmo chip faz as duas coisas: toca pra adicionar, toca de novo pra tirar a seleção
+    // (sem precisar descer até a linha da cor e excluir pelo botão de lixeira). Só fica
+    // desabilitado se NÃO estiver adicionada e já tiver atingido o limite de cores — tirar
+    // a seleção de uma cor já adicionada sempre funciona, mesmo no limite.
+    const atCap = !added && colors.length >= MAX_COLORS;
+    return `<button type="button" class="presetChip${added ? ' is-added' : ''}${p.hex ? '' : ' presetChip--text'}" data-action="togglePresetColor" data-preset="${i}" ${atCap ? 'disabled' : ''} aria-pressed="${added}" aria-label="${added ? 'Remover cor ' : 'Adicionar cor '}${esc(p.name)}">
+      <span class="presetChip__dot"${style}>${added ? icon.check : ''}</span><span class="presetChip__label">${esc(p.name)}</span>
+    </button>`;
+  }
+  function colorRowsInnerHtml(colors) {
+    const rows = colors.map((c, i) => `<div class="colorrow" data-idx="${i}">
+        <div class="colorrow__main">
+          <input type="color" class="colorrow__picker" value="${esc(c.hex || DEFAULT_ROW_HEX)}" data-color-field="hex" data-color-idx="${i}" aria-label="Escolher a cor de ${esc(c.name || `cor ${i + 1}`)} numa paleta" title="Toque para escolher a cor numa paleta" ${c.hex ? '' : 'disabled'}>
+          <input type="text" maxlength="30" placeholder="Nome (ex.: Rosa)" class="colorrow__name" value="${esc(c.name || '')}" data-color-field="name" data-color-idx="${i}" aria-label="Nome da cor ${i + 1}">
+          <button type="button" class="btn btn-small btn-ghost" data-action="removeColorRow" data-idx="${i}" aria-label="Remover a cor ${esc(c.name || i + 1)}">${icon.trash}</button>
+        </div>
+        <button type="button" class="colorrow__hexToggle" data-action="toggleRowHex" data-idx="${i}">${c.hex ? 'Remover cor exata (deixar só o nome)' : 'Definir uma cor exata'}</button>
+      </div>`).join('');
+    return rows || '<p class="fine" style="margin:4px 0 10px">Nenhuma cor cadastrada ainda. Toque numa cor ali em cima pra começar.</p>';
+  }
+  function colorsFieldHtml(colors) {
+    return `<div class="field colorsbox">
+      <label>Opções de cor <span class="hint">(opcional)</span></label>
+      <span class="fine">Toque numa cor pronta pra adicionar na hora. Se quiser uma cor diferente, adicione uma e toque na bolinha dela pra montar a cor certa. Se o produto não tem cor pra escolher (pincéis, esponjas), deixe a lista vazia.</span>
+      <div class="colorPresets" role="group" aria-label="Cores prontas para adicionar">${COLOR_PRESETS.map((p, i) => presetChipHtml(p, i, colors)).join('')}<button type="button" class="presetChip presetChip--custom" data-action="addColorRow" ${colors.length >= MAX_COLORS ? 'disabled' : ''} aria-label="Adicionar uma cor personalizada"><span class="presetChip__dot presetChip__dot--plus" aria-hidden="true">+</span><span class="presetChip__label">Outra cor</span></button></div>
+      <div id="colorRowsWrap" class="colorrows">${colorRowsInnerHtml(colors)}</div>
+    </div>`;
+  }
+  /** Reconstrói a área de cores inteira (chips prontos + linhas) — usado sempre que a lista muda. */
+  function renderColorsField(focusLastName) {
+    const field = $('.colorsbox', root); if (!field) return;
+    const label = field.querySelector('label').outerHTML;
+    const hint = field.querySelector('.fine').outerHTML;
+    field.innerHTML = `${label}${hint}
+      <div class="colorPresets" role="group" aria-label="Cores prontas para adicionar">${COLOR_PRESETS.map((p, i) => presetChipHtml(p, i, st.formColors)).join('')}<button type="button" class="presetChip presetChip--custom" data-action="addColorRow" ${st.formColors.length >= MAX_COLORS ? 'disabled' : ''} aria-label="Adicionar uma cor personalizada"><span class="presetChip__dot presetChip__dot--plus" aria-hidden="true">+</span><span class="presetChip__label">Outra cor</span></button></div>
+      <div id="colorRowsWrap" class="colorrows">${colorRowsInnerHtml(st.formColors)}</div>`;
+    if (focusLastName) $(`[data-color-idx="${st.formColors.length - 1}"][data-color-field="name"]`, root)?.focus();
   }
 
   /* ---------- Modais ---------- */
@@ -219,7 +323,7 @@ export function mountAdmin(root, ctx) {
     const cats = [...new Set([...catNames(), p.category].filter(Boolean))];
     const sel = p.category || cats[0] || '';
     return `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="fTitle" data-action="modalBg"><form class="modal__box" id="pform" novalidate>
-      <h2 id="fTitle">${isNew ? 'Novo produto' : 'Editar produto'}</h2>
+      <h2 id="fTitle" tabindex="-1">${isNew ? 'Novo produto' : 'Editar produto'}</h2>
       <div id="formMsg"></div>
       <div class="field"><label for="f_name">Nome</label><input id="f_name" name="name" type="text" maxlength="120" required value="${esc(p.name || '')}"></div>
       <div class="field"><label for="f_desc">Descrição curta <span class="hint">(opcional, até 140 letras)</span></label><input id="f_desc" name="description" type="text" maxlength="140" value="${esc(p.description || '')}"></div>
@@ -227,6 +331,7 @@ export function mountAdmin(root, ctx) {
       <div class="field stockbox"><label for="f_stock">Unidades em estoque <span class="hint">(opcional)</span></label>
         <input id="f_stock" name="stock" type="number" inputmode="numeric" min="0" max="99999" step="1" placeholder="Deixe vazio se não controla" value="${hasStockInfo(p) ? esc(p.stock) : ''}">
         <span class="fine">Com um número informado, a cliente não consegue pedir mais do que isso. Zero = esgotado.</span></div>
+      ${colorsFieldHtml(st.formColors)}
       <div class="field"><label for="f_file">Foto do produto</label>
         <div class="imgpick"><div class="imgpick__prev" id="prev">${p.image_url ? productImageHtml(p, store.mode) : placeholderHtml(p.category, p.name)}</div>
           <div style="display:grid;gap:8px"><input id="f_file" type="file" accept="image/jpeg,image/png,image/webp"><span class="fine">Tire a foto agora ou escolha da galeria. JPG, PNG ou WebP; ela é reduzida automaticamente.</span></div></div></div>
@@ -240,7 +345,7 @@ export function mountAdmin(root, ctx) {
 
   function catFormHtml(c) {
     return `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="cfTitle" data-action="modalBg"><form class="modal__box" id="catEditForm" novalidate>
-      <h2 id="cfTitle">Renomear categoria</h2><div id="formMsg"></div>
+      <h2 id="cfTitle" tabindex="-1">Renomear categoria</h2><div id="formMsg"></div>
       <div class="field"><label for="ce_name">Nome</label><input id="ce_name" name="name" type="text" maxlength="40" required value="${esc(c.name)}"></div>
       <p class="fine">Os produtos desta categoria passam a usar o novo nome automaticamente.</p>
       <div class="modal__actions"><button type="button" class="btn btn-ghost" data-action="closeModal">Cancelar</button><button type="submit" class="btn btn-primary" id="saveBtn">Salvar</button></div>
@@ -249,12 +354,45 @@ export function mountAdmin(root, ctx) {
 
   function confirmHtml({ title, text, action, label }) {
     return `<div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="cTitle" data-action="modalBg"><div class="modal__box">
-      <h2 id="cTitle">${esc(title)}</h2><p style="margin:0">${text}</p><div id="formMsg"></div>
+      <h2 id="cTitle" tabindex="-1">${esc(title)}</h2><p style="margin:0">${text}</p><div id="formMsg"></div>
       <div class="modal__actions"><button class="btn btn-ghost" data-action="closeModal">Cancelar</button><button class="btn btn-danger" id="confirmBtn" data-action="${action}">${esc(label)}</button></div></div></div>`;
   }
 
-  function openModal(html) { $('#modalRoot', root).innerHTML = html; const f = $('#modalRoot input, #modalRoot .btn', root); f?.focus(); }
-  function closeModal() { const m = $('#modalRoot', root); if (m) m.innerHTML = ''; st.modal = null; }
+  /* O foco ao abrir vai pro título do modal (tem tabindex="-1" pra isso), nunca num campo de
+     texto: focar um campo de texto no celular abre o teclado na hora, mesmo quando a pessoa só
+     queria olhar ou editar outra coisa (ex.: a foto, o estoque), e ela teria que ficar fechando
+     o teclado toda vez que abre a tela de editar produto. */
+  let modalHistoryPushed = false;
+  let closingFromPopstate = false;
+  function openModal(html) {
+    $('#modalRoot', root).innerHTML = html;
+    const f = $('#modalRoot h2, #modalRoot .btn', root);
+    f?.focus();
+    // Um "voltar" do celular com o modal aberto deve só fechar o modal (e continuar no painel),
+    // não sair direto pra loja. Por isso empilhamos um estado extra no histórico ao abrir: o
+    // primeiro "voltar" consome esse estado (onPopState fecha o modal) e só um segundo "voltar"
+    // chega de fato na navegação que sai do painel.
+    if (!modalHistoryPushed) {
+      modalHistoryPushed = true;
+      try { history.pushState({ ...(history.state || {}), __adminModal: true }, ''); } catch { /* sem history: sem problema */ }
+    }
+  }
+  function closeModal() {
+    const m = $('#modalRoot', root); if (m) m.innerHTML = '';
+    st.modal = null;
+    if (modalHistoryPushed) {
+      modalHistoryPushed = false;
+      if (!closingFromPopstate) { try { history.back(); } catch { /* sem history: sem problema */ } }
+    }
+  }
+  function onPopState() {
+    if (st.modal) {
+      closingFromPopstate = true;
+      closeModal();
+      closingFromPopstate = false;
+    }
+  }
+  window.addEventListener('popstate', onPopState);
   const modalMsg = (msg) => { const el = $('#formMsg', root); if (el) el.innerHTML = msg ? `<div class="alert alert--error" role="alert"><span>${esc(msg)}</span></div>` : ''; };
   const byId = (id) => products().find((p) => p.id === id);
   const catById = (id) => categories().find((c) => c.id === id);
@@ -318,6 +456,7 @@ export function mountAdmin(root, ctx) {
     try {
       await store.saveProduct({
         id: editing?.id, name, description, category, image_url, stock,
+        colors: normalizeColors(st.formColors),
         available: form.available.checked, featured: form.featured.checked,
         _oldImage: editing?.image_url || '',
       });
@@ -404,6 +543,12 @@ export function mountAdmin(root, ctx) {
       const v = e.target.value.trim(); const prev = $('#prev', root);
       if (prev) prev.innerHTML = /^(https?:\/\/|blob:)/i.test(v) ? `<img src="${esc(v)}" alt="Prévia da foto" data-cat="" data-name="">` : placeholderHtml('');
     }
+    const cf = e.target.dataset.colorField;
+    if (cf && st.formColors[Number(e.target.dataset.colorIdx)]) {
+      const i = Number(e.target.dataset.colorIdx);
+      // a bolinha (input type=color) já mostra a própria cor sozinha — não precisa de mais nada aqui.
+      st.formColors[i] = { ...st.formColors[i], [cf]: e.target.value };
+    }
   });
 
   root.addEventListener('click', async (e) => {
@@ -413,7 +558,12 @@ export function mountAdmin(root, ctx) {
     if (a === 'modalBg') { if (e.target === el) closeModal(); return; }
     if (a === 'toggle') return;
     if (a === 'back') ctx.goStore();
-    else if (a === 'tab') { st.tab = el.dataset.tab; st.flash = null; root.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === st.tab))); $('#flash', root).innerHTML = ''; renderTab(); }
+    else if (a === 'tab') {
+      st.tab = el.dataset.tab; st.flash = null;
+      root.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === st.tab)));
+      if (st.tab === 'novidades') { markNewsSeen(); el.querySelector('.tabdot')?.remove(); }
+      $('#flash', root).innerHTML = ''; renderTab();
+    }
     else if (a === 'preview') { try { await enter(await store.signIn()); } catch (err) { console.error(err); } }
     else if (a === 'logout') { try { await store.signOut(); } catch (err) { console.error(err); } st.user = null; show(); }
     else if (a === 'dismiss') { st.flash = null; $('#flash', root).innerHTML = ''; }
@@ -422,8 +572,29 @@ export function mountAdmin(root, ctx) {
     else if (a === 'toggleFeatured') { st.f.featured = !st.f.featured; el.setAttribute('aria-pressed', String(st.f.featured)); renderList(); }
     else if (a === 'toggleLow') { st.f.low = !st.f.low; el.setAttribute('aria-pressed', String(st.f.low)); renderList(); }
     else if (a === 'showLow') { st.f.low = true; renderTab(); }
-    else if (a === 'new') { st.modal = {}; openModal(formHtml({ available: true })); }
-    else if (a === 'edit') { const p = byId(el.dataset.id); if (p) { st.modal = p; openModal(formHtml(p)); } }
+    else if (a === 'new') { st.modal = {}; st.formColors = []; openModal(formHtml({ available: true })); }
+    else if (a === 'edit') { const p = byId(el.dataset.id); if (p) { st.modal = p; st.formColors = normalizeColors(p.colors || []); openModal(formHtml(p)); } }
+    else if (a === 'addColorRow') { if (st.formColors.length < MAX_COLORS) { st.formColors = [...st.formColors, { name: '', hex: null }]; renderColorsField(true); } }
+    else if (a === 'removeColorRow') { st.formColors = st.formColors.filter((_, i) => i !== Number(el.dataset.idx)); renderColorsField(false); }
+    else if (a === 'togglePresetColor') {
+      const preset = COLOR_PRESETS[Number(el.dataset.preset)];
+      if (!preset) return;
+      const already = st.formColors.some((c) => norm(c.name) === norm(preset.name));
+      if (already) {
+        st.formColors = st.formColors.filter((c) => norm(c.name) !== norm(preset.name));
+      } else {
+        if (st.formColors.length >= MAX_COLORS) return;
+        st.formColors = [...st.formColors, { ...preset }];
+      }
+      renderColorsField(false);
+    } else if (a === 'toggleRowHex') {
+      const i = Number(el.dataset.idx); const cur = st.formColors[i]; if (!cur) return;
+      const turningOn = !cur.hex;
+      st.formColors[i] = { ...cur, hex: turningOn ? DEFAULT_ROW_HEX : null };
+      renderColorsField(false);
+      // acabou de ligar a cor exata: já abre o seletor nativo, pra não precisar tocar duas vezes.
+      if (turningOn) $(`.colorrow[data-idx="${i}"] .colorrow__picker`, root)?.showPicker?.();
+    }
     else if (a === 'closeModal') closeModal();
     else if (a === 'askDelete') {
       const p = byId(el.dataset.id); if (!p) return;
@@ -469,5 +640,5 @@ export function mountAdmin(root, ctx) {
 
   refreshUser().then(async () => { if (st.user) { await ctx.loadProducts(); if (alive) renderTab(); } });
 
-  return () => { alive = false; document.removeEventListener('keydown', onKey); unsubAuth && unsubAuth(); };
+  return () => { alive = false; document.removeEventListener('keydown', onKey); window.removeEventListener('popstate', onPopState); unsubAuth && unsubAuth(); };
 }

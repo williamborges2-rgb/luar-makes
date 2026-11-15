@@ -2,6 +2,7 @@ import './styles.css';
 import { STORE } from './config.js';
 import { normalizeSettings } from './lib/settings.js';
 import { hasStockInfo, isOrderable, stockState } from './lib/stock.js';
+import { hasColors } from './lib/colors.js';
 import { formatBRL, UNIT_PRICE_LABEL } from './lib/money.js';
 import { createCart, lineTotalCents } from './lib/cart.js';
 import { buildOrderMessage, buildWhatsAppUrl, fulfillmentOptions } from './lib/whatsapp.js';
@@ -18,7 +19,7 @@ installImageFallback();
 const app = document.getElementById('app');
 let store; // definido em start()
 const cart = createCart();
-const state = { products: [], categories: [], settings: normalizeSettings(), loading: true, loadError: '', category: 'Todos', query: '', cartOpen: false, fulfillment: 'pickup', notes: '' };
+const state = { products: [], categories: [], settings: normalizeSettings(), loading: true, loadError: '', category: 'Todos', query: '', cartOpen: false, fulfillment: 'pickup', notes: '', selectedColor: {} };
 
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -150,19 +151,41 @@ function cardHtml(p) {
   // urgente (como a maioria das lojas faz: um aviso mais forte bem perto do fim do estoque).
   const critical = low && p.stock <= 2;
   const stockText = p.stock === 1 ? 'Última unidade!' : `Últimas ${p.stock} unidades!`;
-  const label = !p.available ? 'Indisponível' : 'Esgotado';
+  // Na foto (espaço curto, principalmente no celular) o selo é só um lembrete rápido;
+  // a frase completa fica no texto abaixo do nome, onde há largura de sobra para ler bem.
+  const stockBadge = p.stock === 1 ? 'Última!' : `Só ${p.stock}!`;
+  const outLabel = !p.available ? 'Indisponível' : 'Esgotado';
+  const needsColor = ok && hasColors(p);
+  const chosenColor = needsColor ? state.selectedColor[p.id] || null : null;
+  let btnLabel = 'Adicionar ao carrinho'; let btnDisabled = !ok;
+  if (!ok) btnLabel = outLabel;
+  else if (needsColor && !chosenColor) { btnLabel = 'Escolha uma cor'; btnDisabled = true; }
   return `<article class="card${ok ? '' : ' is-out'}">
-    <div class="card__media">${productImageHtml(p, store.mode)}<div class="card__badges">${p.featured && ok ? '<span class="tag">Destaque</span>' : ''}${low ? `<span class="tag tag--stock${critical ? ' tag--critical' : ''}">${icon.spark}${stockText}</span>` : ''}</div>${ok ? '' : `<span class="out">${label}</span>`}</div>
+    <div class="card__media">${productImageHtml(p, store.mode)}<div class="card__badges">${p.featured && ok ? '<span class="tag">Destaque</span>' : ''}${low ? `<span class="tag tag--stock${critical ? ' tag--critical' : ''}">${icon.spark}${stockBadge}</span>` : ''}</div>${ok ? '' : `<span class="out">${outLabel}</span>`}</div>
     <div class="card__body">
       <span class="card__cat">${esc(p.category)}</span>
       <h3 class="card__name">${esc(p.name)}</h3>
       ${p.description ? `<p class="card__desc">${esc(p.description)}</p>` : ''}
       ${low ? `<p class="card__stock${critical ? ' card__stock--critical' : ''}">${stockText}</p>` : ''}
+      ${needsColor ? colorPickHtml(p, chosenColor) : ''}
       <div class="card__foot">
         <span class="price"><small>R$</small>10,00</span>
-        <button class="btn btn-add" data-action="add" data-id="${esc(p.id)}" ${ok ? '' : 'disabled'}>${ok ? 'Adicionar ao carrinho' : label}</button>
+        <button class="btn btn-add" data-action="add" data-id="${esc(p.id)}" ${btnDisabled ? 'disabled' : ''}>${btnLabel}</button>
       </div>
     </div></article>`;
+}
+
+/** Seletor de cor do card: bolinhas coloridas (com `hex`) ou chips de texto (sem `hex`). */
+function colorPickHtml(p, chosen) {
+  const swatches = p.colors.map((c) => {
+    const active = chosen === c.name;
+    const style = c.hex ? ` style="--sw:${esc(c.hex)}"` : '';
+    return `<button type="button" class="swatch${active ? ' is-active' : ''}${c.hex ? '' : ' swatch--text'}" data-action="selectColor" data-id="${esc(p.id)}" data-color="${esc(c.name)}" aria-pressed="${active}" aria-label="Cor ${esc(c.name)}" title="${esc(c.name)}"${style}>${c.hex ? '' : esc(c.name)}</button>`;
+  }).join('');
+  return `<div class="colorpick">
+    <div class="colorpick__row" role="group" aria-label="Escolher a cor de ${esc(p.name)}">${swatches}</div>
+    <p class="colorpick__status">${chosen ? `Cor: <b>${esc(chosen)}</b>` : 'Escolha uma cor'}</p>
+  </div>`;
 }
 
 function categoriesInUse() {
@@ -214,7 +237,7 @@ function lineHtml(l) {
   return `<li class="line">
     <div class="line__img">${productImageHtml(l, store.mode)}</div>
     <div>
-      <p class="line__name">${esc(l.name)}</p>
+      <p class="line__name">${esc(l.name)}${l.color ? `<span class="line__color">Cor: ${esc(l.color)}</span>` : ''}</p>
       <div class="line__row">
         <div class="qty" role="group" aria-label="Quantidade de ${esc(l.name)}">
           <button data-action="dec" data-id="${esc(l.id)}" aria-label="Diminuir quantidade">${icon.minus}</button>
@@ -326,10 +349,15 @@ function renderStore() {
     const el = e.target.closest('[data-action]');
     if (!el) return;
     const { action, id } = el.dataset;
-    if (action === 'add') {
+    if (action === 'selectColor') {
+      state.selectedColor[id] = el.dataset.color;
+      fillFeatured(root); fillResults(root);
+    } else if (action === 'add') {
       const p = state.products.find((x) => x.id === id);
       if (!p || !isOrderable(p)) return;
-      const r = cart.add(p);
+      const color = hasColors(p) ? state.selectedColor[id] || null : null;
+      if (hasColors(p) && !color) return; // botão já fica desabilitado nesse caso
+      const r = cart.add(p, color);
       if (!r.ok) { showToast(root, `Você já tem ${r.max === 1 ? 'a única unidade' : `as ${r.max} unidades`} em estoque no carrinho`); return; }
       el.classList.add('is-added'); el.textContent = 'Adicionado ✓';
       setTimeout(() => { el.classList.remove('is-added'); el.textContent = 'Adicionar ao carrinho'; }, 1300);
