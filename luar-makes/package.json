@@ -14,7 +14,8 @@
     "images": "node scripts/fetch-images.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.45.0",
+    "qrcode": "^1.5.3"
   },
   "devDependencies": {
     "vite": "^5.4.0",
