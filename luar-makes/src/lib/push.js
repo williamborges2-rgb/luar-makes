@@ -65,8 +65,8 @@ export async function enablePush(store) {
     }
     await store.subscribePush(toSubscriptionRow(sub));
     return { ok: true };
-  } catch {
-    return { ok: false, reason: 'error' };
+  } catch (err) {
+    return { ok: false, reason: 'error', message: (err && (err.message || err.error_description || err.code)) ? String(err.message || err.error_description || err.code) : String(err) };
   }
 }
 
