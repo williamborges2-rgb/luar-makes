@@ -62,3 +62,42 @@ self.addEventListener('fetch', (event) => {
   }
   // qualquer outra coisa: o navegador cuida, sem service worker
 });
+
+/* Notificações push (opcional, só ativa se a cliente autorizou).
+ * O servidor nunca manda a foto do produto nem nada fora de título/corpo/link — só texto. */
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { data = {}; }
+  const title = data.title || 'Luar Make Up';
+  const body = data.body || 'Novidade na loja!';
+  const url = data.url || SCOPE;
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: new URL('icons/icon-192.png', SCOPE).href,
+      badge: new URL('icons/icon-192.png', SCOPE).href,
+      data: { url },
+      tag: data.tag || 'luar-makes',
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || SCOPE;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) { if (c.url === url && 'focus' in c) return c.focus(); }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    })
+  );
+});
+
+// Se o navegador renovar a assinatura sozinho (ex.: expirou), o site não fica sabendo na hora —
+// mas na próxima visita ele detecta que a assinatura mudou e re-inscreve automaticamente
+// (ver subscribeIfPossible em src/lib/push.js).
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(
+    self.registration.pushManager.subscribe(event.oldSubscription ? event.oldSubscription.options : undefined).catch(() => null)
+  );
+});

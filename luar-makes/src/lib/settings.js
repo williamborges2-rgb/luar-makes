@@ -6,6 +6,7 @@ export function normalizeSettings(raw = {}) {
   for (const k of Object.keys(DEFAULT_SETTINGS)) if (raw[k] !== undefined && raw[k] !== null) s[k] = raw[k];
   s.low_stock_threshold = Math.max(0, Math.floor(Number(s.low_stock_threshold)) || 0);
   s.whatsappUrl = `https://wa.me/${s.whatsapp_number}`;
+  s.pix_enabled = !!s.pix_enabled && !!String(s.pix_key || '').trim();
   return s;
 }
 

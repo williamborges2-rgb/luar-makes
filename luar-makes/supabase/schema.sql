@@ -57,6 +57,8 @@ alter table public.products add constraint products_colors_check check (jsonb_ty
 alter table public.products drop constraint if exists products_image_url_check;
 alter table public.products add constraint products_image_url_check
   check (image_url is null or image_url ~* '^(https?://|/)');
+-- Notificações push: quando a dona avisou pela última vez sobre este produto (null = nunca avisou).
+alter table public.products add column if not exists last_notified_at timestamptz;
 
 create index if not exists products_category_idx on public.products (category);
 create index if not exists products_order_idx on public.products (sort_order, created_at desc);
@@ -115,9 +117,26 @@ create table if not exists public.store_settings (
   pickup_instructions   text not null default '' check (char_length(pickup_instructions) <= 300),
   delivery_instructions text not null default 'Disponibilidade, valor e prazo são combinados com a loja pelo WhatsApp.' check (char_length(delivery_instructions) <= 300),
   low_stock_threshold   integer not null default 3 check (low_stock_threshold between 0 and 999),
+  -- Pagamento via Pix (opcional): a chave fica aqui só pra montar o código "copia e cola"/QR Code
+  -- na hora do pedido. Não há processamento de pagamento nenhum — é só exibir a chave da loja.
+  pix_enabled           boolean not null default false,
+  pix_key_type          text not null default 'email' check (pix_key_type in ('cpf', 'cnpj', 'email', 'celular', 'aleatoria')),
+  pix_key               text not null default '' check (char_length(pix_key) <= 120),
+  pix_receiver_name     text not null default '' check (char_length(pix_receiver_name) <= 60),
+  pix_city              text not null default '' check (char_length(pix_city) <= 60),
   updated_at            timestamptz not null default now()
 );
 insert into public.store_settings (id) values (true) on conflict (id) do nothing;
+
+-- Bancos criados pela versão anterior deste arquivo: acrescenta o que faltava (seguro repetir).
+alter table public.store_settings add column if not exists pix_enabled boolean not null default false;
+alter table public.store_settings add column if not exists pix_key_type text not null default 'email';
+alter table public.store_settings add column if not exists pix_key text not null default '';
+alter table public.store_settings add column if not exists pix_receiver_name text not null default '';
+alter table public.store_settings add column if not exists pix_city text not null default '';
+alter table public.store_settings drop constraint if exists store_settings_pix_key_type_check;
+alter table public.store_settings add constraint store_settings_pix_key_type_check
+  check (pix_key_type in ('cpf', 'cnpj', 'email', 'celular', 'aleatoria'));
 
 drop trigger if exists store_settings_set_updated_at on public.store_settings;
 create trigger store_settings_set_updated_at before update on public.store_settings
@@ -198,3 +217,32 @@ drop policy if exists "imagens: admin remove" on storage.objects;
 create policy "imagens: admin remove"
   on storage.objects for delete to authenticated
   using (bucket_id = 'product-images' and public.is_admin());
+
+-- 5) Notificações push (Web Push) -------------------------------------
+-- Cada linha é "o celular de uma cliente que ativou notificações", no formato que o navegador dela
+-- devolveu ao se inscrever (endpoint + chaves públicas de criptografia, nunca um nome ou telefone).
+-- Quem manda a notificação de verdade é a Edge Function "send-notification", usando a chave de
+-- serviço do Supabase (não passa pela política de acesso abaixo, que é só para o próprio site).
+create table if not exists public.push_subscriptions (
+  id         uuid primary key default gen_random_uuid(),
+  endpoint   text not null unique check (char_length(endpoint) <= 2000),
+  p256dh     text not null check (char_length(p256dh) <= 300),
+  auth       text not null check (char_length(auth) <= 300),
+  created_at timestamptz not null default now()
+);
+
+alter table public.push_subscriptions enable row level security;
+-- Ninguém lê a lista pelo site (nem a própria cliente) — só a Edge Function, com a chave de serviço.
+-- Qualquer pessoa pode se inscrever (inserir/atualizar sua própria assinatura) ou se desinscrever.
+drop policy if exists "push: qualquer pessoa se inscreve" on public.push_subscriptions;
+create policy "push: qualquer pessoa se inscreve"
+  on public.push_subscriptions for insert to anon, authenticated
+  with check (true);
+drop policy if exists "push: qualquer pessoa atualiza sua inscricao" on public.push_subscriptions;
+create policy "push: qualquer pessoa atualiza sua inscricao"
+  on public.push_subscriptions for update to anon, authenticated
+  using (true) with check (true);
+drop policy if exists "push: qualquer pessoa cancela sua inscricao" on public.push_subscriptions;
+create policy "push: qualquer pessoa cancela sua inscricao"
+  on public.push_subscriptions for delete to anon, authenticated
+  using (true);

@@ -13,6 +13,7 @@ export function createDemoStore(mode) {
   let cats = DEFAULT_CATEGORIES.map((name, i) => ({ id: `cat-${i}`, name, sort_order: i }));
   let settings = normalizeSettings();
   let signedIn = false;
+  let pushSubs = 0;
   const listeners = new Set();
   const emit = () => listeners.forEach((fn) => fn());
   let seq = 0;
@@ -71,5 +72,15 @@ export function createDemoStore(mode) {
     async reorderCategories(ids) { cats = cats.map((c) => ({ ...c, sort_order: ids.indexOf(c.id) })); },
 
     async saveSettings(s) { settings = normalizeSettings({ ...settings, ...s }); return { ...settings }; },
+
+    // Prévia/demonstração: não existe banco nem Edge Function de verdade, então isso só simula
+    // o comportamento (guarda em memória, soma uma inscrição "fake" pra prévia não ficar vazia).
+    async subscribePush() { pushSubs = Math.max(pushSubs, 1); },
+    async unsubscribePush() { pushSubs = Math.max(0, pushSubs - 1); },
+    async sendProductNotification(productId) {
+      await new Promise((r) => setTimeout(r, 400)); // parece um envio de verdade
+      rows = rows.map((r) => (r.id === productId ? { ...r, last_notified_at: new Date().toISOString() } : r));
+      return { sent: pushSubs, removed: 0 };
+    },
   };
 }

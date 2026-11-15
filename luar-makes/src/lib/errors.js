@@ -38,6 +38,11 @@ export function friendlyError(err, context) {
     if (/jwt|expired/i.test(msg)) return 'Sua sessão expirou. Entre de novo.';
     return context === 'save' ? 'Não foi possível salvar o produto. Tente de novo.' : 'Não foi possível remover o produto. Tente de novo.';
   }
+  if (context === 'notify') {
+    if (/not found|404/i.test(msg + code)) return 'A função de notificações ainda não foi publicada no Supabase. Siga o passo a passo do README (seção "Notificações push") para publicá-la.';
+    if (code === '42501' || /row-level security|permission denied|not authorized|unauthorized/i.test(msg)) return 'Sem permissão para enviar notificações. Saia e entre de novo com a conta de administradora.';
+    return 'Não foi possível enviar a notificação agora. Confira se a função "send-notification" foi publicada no Supabase (veja o README) e tente de novo.';
+  }
   if (context === 'upload') {
     if (/bucket not found/i.test(msg)) return 'O espaço de imagens ainda não existe. Rode o arquivo supabase/schema.sql no Supabase (veja o README).';
     if (/exceeded|too large|payload/i.test(msg)) return 'A imagem é grande demais. Escolha uma imagem de até 5 MB.';

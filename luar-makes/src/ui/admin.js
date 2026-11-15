@@ -5,12 +5,14 @@ import { parsePhone, parseInstagram } from '../lib/settings.js';
 import { hasStockInfo, isLowStock } from '../lib/stock.js';
 import { normalizeColors, MAX_COLORS } from '../lib/colors.js';
 import { COLOR_PRESETS } from '../lib/colorPresets.js';
+import { PIX_KEY_TYPES, normalizePixKey, buildPixPayload, pixQrSvg } from '../lib/pix.js';
 import { esc, $ } from './dom.js';
 import { icon, icon2, brandHtml } from './icons.js';
 import { productImageHtml, placeholderHtml } from './placeholder.js';
 
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const collator = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true });
+const notifyFmt = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 /**
  * Novidades da loja: o que mudou a cada atualização, escrito para quem cuida da loja no
@@ -18,6 +20,22 @@ const collator = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true
  * adicione um item no TOPO desta lista — o ponto vermelho na aba "Novidades" aparece sozinho.
  */
 const CHANGELOG = [
+  {
+    version: '1.4.0', date: '2026-11-15', title: 'Notificação de produto no celular',
+    items: [
+      'Agora dá para avisar quem ativou notificações quando chega um produto novo (ou reforçar um que já está na loja): cada produto tem um botão "Enviar notificação" (ou "Reenviar", se já foi enviada antes), que mostra a data do último envio.',
+      'Na loja, aparece um aviso convidando a cliente a ativar as notificações no celular dela — ela decide se quer ou não, e pode fechar o aviso a qualquer momento.',
+      'Esse recurso precisa de uma etapa extra de configuração no Supabase (publicar uma função e gerar uma chave) — veja o passo a passo no README, seção "Notificações push". Sem essa etapa, o botão continua aparecendo mas a notificação não sai.',
+    ],
+  },
+  {
+    version: '1.3.0', date: '2026-11-15', title: 'Pagamento via Pix',
+    items: [
+      'Na aba "Configurações", agora dá pra ligar o pagamento via Pix: escolha o tipo de chave (CPF, CNPJ, e-mail, celular ou chave aleatória), informe a chave e o nome/cidade da loja, e um QR Code de teste aparece na hora pra você conferir.',
+      'Com o Pix ligado, na hora de fechar o pedido a cliente pode escolher "Pagar com Pix agora": aparece o QR Code e o código "Pix copia e cola" já com o valor certinho do pedido dela, prontos para pagar no aplicativo do banco.',
+      'Depois de pagar, a cliente marca "Já fiz o pagamento via Pix" e isso entra na mensagem do WhatsApp — mas é ela quem avisa, não é uma confirmação automática do banco. Por isso é importante sempre pedir o comprovante (print do pagamento) na própria conversa do WhatsApp antes de liberar o pedido.',
+    ],
+  },
   {
     version: '1.2.1', date: '2026-11-15', title: 'Ajustes de uso no painel',
     items: [
@@ -77,6 +95,7 @@ export function mountAdmin(root, ctx) {
     formColors: [], // rascunho das cores do produto sendo editado (ver colorsFieldHtml)
   };
   let alive = true;
+  let pixPreviewTimer;
 
   const products = () => ctx.state.products;
   const categories = () => ctx.state.categories;
@@ -153,8 +172,11 @@ export function mountAdmin(root, ctx) {
       <div class="arow__actions">
         <label class="switch"><input type="checkbox" data-action="toggle" data-id="${esc(p.id)}" ${p.available ? 'checked' : ''}><i></i><span>${p.available ? 'Disponível' : 'Indisponível'}</span></label>
         <button class="btn btn-small btn-ghost" data-action="edit" data-id="${esc(p.id)}">${icon.edit} Editar</button>
+        <button class="btn btn-small btn-ghost arow__notifybtn" data-action="askNotify" data-id="${esc(p.id)}">${icon2.bell} ${p.last_notified_at ? 'Reenviar notificação' : 'Enviar notificação'}</button>
         <button class="btn btn-small btn-ghost" data-action="askDelete" data-id="${esc(p.id)}" style="color:var(--danger);border-color:var(--danger)">${icon.trash} Remover</button>
-      </div></article>`;
+      </div>
+      ${p.last_notified_at ? `<p class="fine arow__notified">Última notificação enviada em ${notifyFmt.format(new Date(p.last_notified_at))}.</p>` : ''}
+      </article>`;
   }
 
   function listHtml() {
@@ -240,8 +262,65 @@ export function mountAdmin(root, ctx) {
         <div class="field"><label for="s_pick">Instruções de retirada <span class="hint">(opcional)</span></label><textarea id="s_pick" name="pickup" maxlength="300" placeholder="Ex.: toque a campainha do bloco 8, fundos.">${esc(s.pickup_instructions)}</textarea><span class="fine">Não prometa horários que a loja não possa cumprir.</span></div>
         <div class="field"><label for="s_del">Instruções de entrega <span class="hint">(aparece em “Consultar entrega”)</span></label><textarea id="s_del" name="delivery" maxlength="300">${esc(s.delivery_instructions)}</textarea></div>
         <div class="field"><label for="s_low">Alerta de estoque baixo <span class="hint">(a partir de quantas unidades)</span></label><input id="s_low" name="low" type="number" inputmode="numeric" min="0" max="999" step="1" value="${esc(s.low_stock_threshold)}"></div>
+        <hr style="border:0;border-top:1px dashed var(--line);margin:4px 0">
+        ${pixFieldsHtml(s)}
         <button class="btn btn-primary" type="submit" id="setBtn">Salvar configurações</button>
       </form>`;
+  }
+
+  /* ---------- Pagamento via Pix ----------
+     A chave fica guardada na loja só pra montar o código/QR Code na hora do pedido — não existe
+     nenhuma confirmação automática de pagamento (isso exigiria contratar cobrança com o banco).
+     A pré-visualização aqui serve pra dona conferir se a própria chave está certa antes de ativar. */
+  function pixFieldsHtml(s) {
+    return `<div class="field"><label class="check"><input type="checkbox" id="s_pix_on" name="pix_on" ${s.pix_enabled ? 'checked' : ''}> Aceitar pagamento via Pix</label>
+      <span class="fine">Quando ligado, a cliente vê a chave/QR Code da loja ao finalizar o pedido e pode avisar que já pagou. O recebimento continua sendo conferido por você no aplicativo do seu banco.</span></div>
+    <div class="two">
+      <div class="field"><label for="s_pix_type">Tipo de chave Pix</label>
+        <select id="s_pix_type" name="pix_type">${PIX_KEY_TYPES.map((t) => `<option value="${t.id}" ${s.pix_key_type === t.id ? 'selected' : ''}>${esc(t.label)}</option>`).join('')}</select></div>
+      <div class="field"><label for="s_pix_key">Chave Pix</label>
+        <input id="s_pix_key" name="pix_key" type="text" value="${esc(s.pix_key)}" placeholder="Copie a chave certinho do app do seu banco"></div>
+    </div>
+    <div class="two">
+      <div class="field"><label for="s_pix_name">Nome do recebedor <span class="hint">(como está no banco)</span></label>
+        <input id="s_pix_name" name="pix_name" type="text" maxlength="60" value="${esc(s.pix_receiver_name)}" placeholder="Ex.: Flavia Barros"></div>
+      <div class="field"><label for="s_pix_city">Cidade <span class="hint">(da conta do banco)</span></label>
+        <input id="s_pix_city" name="pix_city" type="text" maxlength="60" value="${esc(s.pix_city)}" placeholder="Ex.: Florianópolis"></div>
+    </div>
+    <div id="pixPreview">${pixPreviewHtml(s)}</div>`;
+  }
+
+  function pixPreviewHtml(s) {
+    const r = normalizePixKey(s.pix_key_type, s.pix_key);
+    if (!r.ok) return `<p class="fine">Preencha a chave Pix para ver a prévia do QR Code.</p>`;
+    if (!String(s.pix_receiver_name || '').trim() || !String(s.pix_city || '').trim()) {
+      return `<p class="fine">Preencha também o nome do recebedor e a cidade para gerar a prévia.</p>`;
+    }
+    const payload = buildPixPayload({ key: r.value, receiverName: s.pix_receiver_name, city: s.pix_city, amountCents: 1000 });
+    return `<div class="pixbox"><p class="fine"><b>Prévia</b> (com o valor de um produto, ${UNIT_PRICE_LABEL}, só pra teste):</p>
+      <div id="pixPreviewQr" class="pixQrWrap" data-payload="${esc(payload)}">Gerando QR Code…</div>
+      <textarea class="pixcode" readonly rows="3" onclick="this.select()">${esc(payload)}</textarea></div>`;
+  }
+
+  async function refreshPixPreviewQr() {
+    const el = $('#pixPreviewQr', root);
+    if (!el) return;
+    const payload = el.dataset.payload;
+    try { el.innerHTML = await pixQrSvg(payload); }
+    catch { el.innerHTML = '<p class="fine">Não foi possível desenhar o QR Code agora.</p>'; }
+  }
+
+  /* Prévia ao vivo enquanto a dona digita a chave/nome/cidade, pra ela conferir ANTES de salvar
+     se os dados estão certos — sem isso, só saberia se a chave funciona depois de publicar. */
+  function updatePixPreviewFromForm() {
+    const form = $('#setForm', root); const box = $('#pixPreview', root);
+    if (!form || !box) return;
+    const draft = {
+      pix_key_type: form.pix_type.value, pix_key: form.pix_key.value,
+      pix_receiver_name: form.pix_name.value, pix_city: form.pix_city.value,
+    };
+    box.innerHTML = pixPreviewHtml(draft);
+    refreshPixPreviewQr();
   }
 
   /* ---------- Estrutura ---------- */
@@ -267,6 +346,7 @@ export function mountAdmin(root, ctx) {
     if (!body) return;
     body.innerHTML = st.tab === 'categorias' ? categoriesTabHtml() : st.tab === 'config' ? settingsTabHtml() : st.tab === 'novidades' ? newsTabHtml() : productsTabHtml();
     if (st.tab === 'produtos') renderList();
+    if (st.tab === 'config') refreshPixPreviewQr();
   }
 
   /* ---------- Cores do produto (lista dinâmica dentro do formulário) ----------
@@ -499,6 +579,16 @@ export function mountAdmin(root, ctx) {
     if (address.length < 5) { msg('error', 'Escreva o endereço da loja.'); form.address.focus(); return; }
     const lowRaw = form.low.value.trim();
     if (!/^\d{1,3}$/.test(lowRaw)) { msg('error', 'O alerta de estoque baixo deve ser um número entre 0 e 999.'); form.low.focus(); return; }
+    const pixOn = form.pix_on.checked;
+    const pixType = form.pix_type.value;
+    let pixKey = '';
+    if (pixOn || form.pix_key.value.trim()) {
+      const r = normalizePixKey(pixType, form.pix_key.value);
+      if (!r.ok) { msg('error', r.error); form.pix_key.focus(); return; }
+      pixKey = r.value;
+      if (pixOn && !form.pix_name.value.trim()) { msg('error', 'Para aceitar Pix, informe o nome do recebedor (como está registrado no banco).'); form.pix_name.focus(); return; }
+      if (pixOn && !form.pix_city.value.trim()) { msg('error', 'Para aceitar Pix, informe a cidade da conta bancária.'); form.pix_city.focus(); return; }
+    }
     const btn = $('#setBtn', root); btn.disabled = true; btn.textContent = 'Salvando…'; msg('', '');
     try {
       await store.saveSettings({
@@ -506,6 +596,8 @@ export function mountAdmin(root, ctx) {
         instagram_url: ig.url, instagram_handle: ig.handle, address,
         pickup_instructions: form.pickup.value.trim(), delivery_instructions: form.delivery.value.trim(),
         low_stock_threshold: Number(lowRaw),
+        pix_enabled: pixOn, pix_key_type: pixType, pix_key: pixKey,
+        pix_receiver_name: form.pix_name.value.trim(), pix_city: form.pix_city.value.trim(),
       });
       await ctx.loadProducts(); if (!alive) return;
       renderTab(); flash('ok', 'Configurações salvas. A loja já usa os novos dados.');
@@ -517,6 +609,7 @@ export function mountAdmin(root, ctx) {
     if (t.id === 'a_cat') { st.f.cat = t.value; renderList(); }
     if (t.id === 'a_avail') { st.f.avail = t.value; renderList(); }
     if (t.id === 'a_sort') { st.f.sort = t.value; renderList(); }
+    if (t.id === 's_pix_type') updatePixPreviewFromForm();
     if (t.matches('[data-action="toggle"]')) {
       const p = byId(t.dataset.id); if (!p) return;
       const next = t.checked; t.disabled = true;
@@ -548,6 +641,9 @@ export function mountAdmin(root, ctx) {
       const i = Number(e.target.dataset.colorIdx);
       // a bolinha (input type=color) já mostra a própria cor sozinha — não precisa de mais nada aqui.
       st.formColors[i] = { ...st.formColors[i], [cf]: e.target.value };
+    }
+    if (['s_pix_key', 's_pix_name', 's_pix_city'].includes(e.target.id)) {
+      clearTimeout(pixPreviewTimer); pixPreviewTimer = setTimeout(updatePixPreviewFromForm, 350);
     }
   });
 
@@ -605,6 +701,25 @@ export function mountAdmin(root, ctx) {
       el.disabled = true; el.textContent = 'Removendo…'; modalMsg('');
       try { await store.deleteProduct(p.id, p.image_url); closeModal(); await reload(); flash('ok', 'Produto removido.'); }
       catch (err) { console.error(err); el.disabled = false; el.textContent = 'Remover'; modalMsg(friendlyError(err, 'delete')); }
+    } else if (a === 'askNotify') {
+      const p = byId(el.dataset.id); if (!p) return;
+      st.modal = p;
+      const already = !!p.last_notified_at;
+      openModal(confirmHtml({
+        title: already ? 'Reenviar notificação?' : 'Enviar notificação?',
+        text: already
+          ? `Vai avisar de novo quem ativou notificações sobre “${esc(p.name)}” (última vez: ${notifyFmt.format(new Date(p.last_notified_at))}). Use para reforçar um produto que ainda está disponível.`
+          : `Quem já ativou notificações no celular vai receber um aviso tipo “Chegou: ${esc(p.name)}! Por ${UNIT_PRICE_LABEL}”.`,
+        action: 'doNotify', label: already ? 'Reenviar' : 'Enviar',
+      }));
+    } else if (a === 'doNotify') {
+      const p = st.modal; if (!p) return;
+      el.disabled = true; el.textContent = 'Enviando…'; modalMsg('');
+      try {
+        const r = await store.sendProductNotification(p.id);
+        closeModal(); await reload();
+        flash('ok', r && r.sent ? `Notificação enviada para ${r.sent} ${r.sent === 1 ? 'pessoa' : 'pessoas'}.` : 'Notificação enviada. Ainda não há ninguém inscrito para recebê-la.');
+      } catch (err) { console.error(err); el.disabled = false; el.textContent = 'Enviar'; modalMsg(friendlyError(err, 'notify')); }
     } else if (a === 'askDemo') {
       const n = products().filter((p) => p.is_demo).length;
       st.modal = { demo: true };

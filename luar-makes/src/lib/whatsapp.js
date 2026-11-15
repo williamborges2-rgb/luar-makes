@@ -23,7 +23,7 @@ export function fulfillmentOptions(settings) {
 }
 
 /** Monta o texto do pedido em português. A cliente revisa antes de enviar. */
-export function buildOrderMessage({ lines, fulfillment = 'pickup', notes = '', settings }) {
+export function buildOrderMessage({ lines, fulfillment = 'pickup', notes = '', settings, paymentMethod = 'later', pixPaidConfirm = false }) {
   const s = normalizeSettings(settings);
   const t = cartTotals(lines);
   const out = [];
@@ -44,6 +44,13 @@ export function buildOrderMessage({ lines, fulfillment = 'pickup', notes = '', s
     out.push('Quero saber se vocês entregam na minha região, o valor e o prazo. O valor da entrega não está incluído no total acima.');
   } else {
     out.push(`Modalidade: Retirar na loja (${s.address})`);
+  }
+  if (paymentMethod === 'pix' && s.pix_enabled) {
+    out.push('');
+    out.push('Forma de pagamento: Pix');
+    out.push(pixPaidConfirm
+      ? 'Já fiz o pagamento via Pix — segue o comprovante nesta conversa.'
+      : 'Vou pagar via Pix (ainda não paguei — envio o comprovante aqui assim que pagar).');
   }
   const n = String(notes || '').trim();
   if (n) {

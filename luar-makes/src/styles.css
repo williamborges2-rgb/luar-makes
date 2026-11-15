@@ -64,6 +64,12 @@ button { cursor: pointer; }
 .modebar { background: #3a211b; color: var(--on-dark); font-size: 13px; text-align: center; padding: 8px 16px; line-height: 1.4; }
 .modebar b { color: #f0c8b8; }
 
+/* Banner automático convidando a ativar notificações (aparece sozinho; a cliente pode fechar). */
+.notifybar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--blush-100); border-bottom: 1.5px solid var(--rose-line); padding: 10px 16px; font-size: 13.5px; line-height: 1.4; }
+.notifybar span { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; }
+.notifybar .ico { width: 20px; height: 20px; flex: none; color: var(--ink); }
+.notifybar .iconbtn { width: 36px; height: 36px; border-radius: 10px; margin-left: auto; }
+
 /* ---------- Topo ---------- */
 .topbar { position: sticky; top: 0; z-index: 20; background: rgba(253, 246, 243, .97); backdrop-filter: blur(10px); border-bottom: 2px solid var(--rose-line); box-shadow: 0 2px 14px rgba(143, 78, 61, .1); }
 .topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 62px; }
@@ -272,6 +278,14 @@ fieldset.opts legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
 .opt input { margin-top: 3px; accent-color: var(--ink); width: 18px; height: 18px; }
 .opt b { display: block; }
 .opt small { color: var(--muted); display: block; line-height: 1.4; }
+
+/* Caixa de pagamento via Pix: mostra o QR Code (gerado na hora, sem precisar de internet depois
+   de carregado) e o código "copia e cola" da chave da loja. Usada tanto no carrinho (com o valor
+   do pedido) quanto na prévia do painel administrativo (com um valor de teste). */
+.pixbox { background: var(--surface); border: 1.5px solid var(--rose-line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+.pixQrWrap { width: 100%; max-width: 220px; margin: 0 auto; aspect-ratio: 1 / 1; display: grid; place-items: center; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px; text-align: center; font-size: 12.5px; color: var(--muted); }
+.pixQrWrap svg { width: 100%; height: 100%; display: block; }
+.pixcode { width: 100%; font-family: 'SF Mono', 'Courier New', monospace; font-size: 11px; line-height: 1.35; letter-spacing: 0; resize: none; border: 1.5px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px 12px; word-break: break-all; }
 .field { display: grid; gap: 6px; }
 .field label { font-weight: 600; font-size: 14px; }
 .field .hint { font-size: 12.5px; color: var(--muted); font-weight: 400; }
@@ -340,6 +354,8 @@ fieldset.opts legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
 .chip--low { background: var(--warn-bg); color: var(--warn-ink); }
 .arow__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center; grid-column: 1 / -1; padding-top: 8px; border-top: 1px dashed var(--line); }
 .arow__actions .switch { grid-column: 1 / -1; }
+.arow__actions .arow__notifybtn { grid-column: 1 / -1; }
+.arow__notified { grid-column: 1 / -1; margin: 2px 0 0; color: var(--muted); }
 .switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer; margin-right: auto; min-height: 44px; }
 .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
 .switch i { width: 44px; height: 26px; border-radius: 999px; background: #cfb2aa; position: relative; transition: background .2s; flex: none; }

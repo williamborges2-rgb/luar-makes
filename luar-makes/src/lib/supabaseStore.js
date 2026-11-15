@@ -132,5 +132,23 @@ export function createSupabaseStore(url, anonKey) {
       if (error) throw error;
       return sb.storage.from(IMAGE_BUCKET).getPublicUrl(path).data.publicUrl;
     },
+
+    // Notificações push: qualquer visitante pode se inscrever/desinscrever (não precisa ser admin —
+    // é só "o celular dela quer receber avisos"), mas só a Edge Function lê a lista completa.
+    async subscribePush({ endpoint, p256dh, auth }) {
+      const { error } = await sb.from('push_subscriptions').upsert({ endpoint, p256dh, auth }, { onConflict: 'endpoint' });
+      if (error) throw error;
+    },
+    async unsubscribePush(endpoint) {
+      const { error } = await sb.from('push_subscriptions').delete().eq('endpoint', endpoint);
+      if (error) throw error;
+    },
+    // Só funciona com a Edge Function publicada no Supabase (ver README) — sem ela, dá erro, e o
+    // painel mostra um aviso explicando que falta publicar a função.
+    async sendProductNotification(productId) {
+      const { data, error } = await sb.functions.invoke('send-notification', { body: { productId } });
+      if (error) throw error;
+      return data; // { sent, removed }
+    },
   };
 }

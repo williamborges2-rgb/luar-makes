@@ -6,6 +6,7 @@ import { hasColors } from './lib/colors.js';
 import { formatBRL, UNIT_PRICE_LABEL } from './lib/money.js';
 import { createCart, lineTotalCents } from './lib/cart.js';
 import { buildOrderMessage, buildWhatsAppUrl, fulfillmentOptions } from './lib/whatsapp.js';
+import { buildPixPayload, pixQrSvg } from './lib/pix.js';
 import { createStore } from './lib/store.js';
 import { friendlyError } from './lib/errors.js';
 import { esc, $, $$ } from './ui/dom.js';
@@ -13,13 +14,15 @@ import { icon, brandHtml, brandAvatar } from './ui/icons.js';
 import { productImageHtml, installImageFallback } from './ui/placeholder.js';
 import { mountAdmin } from './ui/admin.js';
 import { installButtonHtml, refreshInstall, initInstall } from './ui/install.js';
+import { notifyBarContainerHtml, refreshNotifyBar, initNotifyBanner } from './ui/notify.js';
+import { resyncPushIfSubscribed } from './lib/push.js';
 
 installImageFallback();
 
 const app = document.getElementById('app');
 let store; // definido em start()
 const cart = createCart();
-const state = { products: [], categories: [], settings: normalizeSettings(), loading: true, loadError: '', category: 'Todos', query: '', cartOpen: false, fulfillment: 'pickup', notes: '', selectedColor: {} };
+const state = { products: [], categories: [], settings: normalizeSettings(), loading: true, loadError: '', category: 'Todos', query: '', cartOpen: false, fulfillment: 'pickup', paymentMethod: 'later', pixPaidConfirm: false, notes: '', selectedColor: {} };
 
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -54,6 +57,7 @@ function storeHtml() {
   const S = state.settings;
   return `
 ${modeBar()}
+${notifyBarContainerHtml()}
 <header class="topbar"><div class="wrap">
   <button class="brand" data-action="goto" data-target="top" aria-label="${esc(STORE.name)} — início">${brandHtml}</button>
   <div class="topsub">
@@ -252,7 +256,36 @@ function lineHtml(l) {
 }
 
 function orderMessage() {
-  return buildOrderMessage({ lines: cart.lines, fulfillment: state.fulfillment, notes: state.notes, settings: state.settings });
+  return buildOrderMessage({
+    lines: cart.lines, fulfillment: state.fulfillment, notes: state.notes, settings: state.settings,
+    paymentMethod: state.paymentMethod, pixPaidConfirm: state.pixPaidConfirm,
+  });
+}
+
+/* Caixa do Pix no carrinho: QR Code + código "copia e cola" da CHAVE DA LOJA, com o valor do
+   pedido já preenchido. Não existe confirmação automática — por isso o aviso pra mandar o
+   comprovante na própria conversa do WhatsApp, que é como a loja confirma o recebimento. */
+function pixBoxHtml(amountCents) {
+  const s = state.settings;
+  const payload = buildPixPayload({ key: s.pix_key, receiverName: s.pix_receiver_name, city: s.pix_city, amountCents, txid: 'LUARMAKES' });
+  return `<div class="pixbox">
+    <p class="fine"><b>Pix de ${formatBRL(amountCents)}</b> para ${esc(s.pix_receiver_name || STORE.name)}. Abra o app do seu banco, escaneie o QR Code ou copie o código abaixo em "Pix Copia e Cola".</p>
+    <div id="pixQrWrap" class="pixQrWrap" data-payload="${esc(payload)}" role="img" aria-label="QR Code para pagamento via Pix">Gerando QR Code…</div>
+    <div class="field"><label for="pixCode">Pix copia e cola</label>
+      <textarea id="pixCode" class="pixcode" readonly rows="3" onclick="this.select()">${esc(payload)}</textarea>
+      <button type="button" class="btn btn-ghost btn-small" data-action="copyPixCode">Copiar código Pix</button>
+    </div>
+    <label class="check"><input type="checkbox" id="pixPaidConfirm" ${state.pixPaidConfirm ? 'checked' : ''}> Já fiz o pagamento via Pix</label>
+    <p class="fine">Depois de pagar, <b>envie o comprovante na própria conversa do WhatsApp</b> junto com a mensagem do pedido — é assim que a loja confirma que o Pix caiu.</p>
+  </div>`;
+}
+
+async function renderPixBox(root) {
+  const el = $('#pixQrWrap', root);
+  if (!el) return;
+  const payload = el.dataset.payload;
+  try { el.innerHTML = await pixQrSvg(payload); }
+  catch { el.innerHTML = '<p class="fine">Não foi possível desenhar o QR Code. Use o código Pix copia e cola acima.</p>'; }
 }
 
 function drawerBodyHtml() {
@@ -273,6 +306,11 @@ function drawerBodyHtml() {
   <fieldset class="opts"><legend>Como você quer receber?</legend>
     ${Object.values(fulfillmentOptions(state.settings)).map((o) => `<label class="opt"><input type="radio" name="fulfillment" value="${o.id}" ${state.fulfillment === o.id ? 'checked' : ''}><span><b>${esc(o.label)}</b><small>${esc(o.hint)}</small></span></label>`).join('')}
   </fieldset>
+  ${state.settings.pix_enabled ? `<fieldset class="opts"><legend>Forma de pagamento</legend>
+    <label class="opt"><input type="radio" name="payment" value="later" ${state.paymentMethod !== 'pix' ? 'checked' : ''}><span><b>Combinar depois</b><small>Combine o pagamento com a loja pelo WhatsApp.</small></span></label>
+    <label class="opt"><input type="radio" name="payment" value="pix" ${state.paymentMethod === 'pix' ? 'checked' : ''}><span><b>Pagar com Pix agora</b><small>Mostra a chave/QR Code da loja para você pagar antes de enviar o pedido.</small></span></label>
+  </fieldset>
+  ${state.paymentMethod === 'pix' ? pixBoxHtml(t.totalCents) : ''}` : ''}
   <div class="field"><label for="notes">Observações <span class="hint">(opcional)</span></label>
     <textarea id="notes" maxlength="400" placeholder="Ex.: cor preferida, bairro para a entrega, horário para retirar">${esc(state.notes)}</textarea></div>
   <div class="field">
@@ -299,6 +337,7 @@ function updateCartUI(root) {
   mbar.hidden = t.count === 0 || state.cartOpen;
   $('#mbarText', root).textContent = `${t.count} ${t.count === 1 ? 'item' : 'itens'} · ${formatBRL(t.totalCents)}`;
   $('#drawerBody', root).innerHTML = drawerBodyHtml();
+  renderPixBox(root);
 }
 
 function setCartOpen(root, open) {
@@ -328,6 +367,8 @@ function renderStore() {
   fillAll(root);
   updateCartUI(root);
   refreshInstall();
+  refreshNotifyBar(root);
+  resyncPushIfSubscribed(store);
   const unsub = cart.subscribe(() => updateCartUI(root));
 
   const onKey = (e) => { if (e.key === 'Escape' && state.cartOpen) setCartOpen(root, false); };
@@ -339,6 +380,8 @@ function renderStore() {
   });
   root.addEventListener('change', (e) => {
     if (e.target.name === 'fulfillment') { state.fulfillment = e.target.value; updateOrderLink(root); }
+    else if (e.target.name === 'payment') { state.paymentMethod = e.target.value; updateCartUI(root); }
+    else if (e.target.id === 'pixPaidConfirm') { state.pixPaidConfirm = e.target.checked; updateOrderLink(root); }
   });
   root.addEventListener('click', async (e) => {
     if (e.target.closest('#waLink') && navigator.onLine === false) {
@@ -381,6 +424,9 @@ function renderStore() {
     else if (action === 'copyMsg') {
       try { await navigator.clipboard.writeText(orderMessage()); showToast(root, 'Mensagem copiada', false); }
       catch { showToast(root, 'Não foi possível copiar. Abra "Ver a mensagem" e copie o texto.', false); }
+    } else if (action === 'copyPixCode') {
+      try { await navigator.clipboard.writeText($('#pixCode', root)?.value || ''); showToast(root, 'Código Pix copiado', false); }
+      catch { showToast(root, 'Não foi possível copiar. Toque no código e copie o texto.', false); }
     } else if (action === 'admin') location.hash = 'admin';
   });
 
@@ -417,6 +463,7 @@ async function start() {
     app.innerHTML = '<div class="wrap" style="padding:40px 16px"><div class="alert alert--error" role="alert"><span>Não foi possível iniciar a loja. Recarregue a página ou chame a Luar Make Up no WhatsApp: (48) 98505-5020.</span></div></div>';
     return;
   }
+  initNotifyBanner(store);
   route();
 }
 /** Faixa fixa quando o aparelho fica sem internet (some sozinha quando a conexão volta). */
