@@ -61,12 +61,5 @@ export function initNotifyBanner(store, root = document) {
     if (r.ok) { refreshNotifyBar(root); return; }
     if (r.reason === 'denied') { dismiss(3650); refreshNotifyBar(root); return; } // bloqueou no navegador: não insiste mais
     enableBtn.disabled = false; enableBtn.textContent = 'Ativar notificações'; // erro passageiro: deixa tentar de novo
-    // DEBUG TEMPORÁRIO: mostra o erro real pra diagnosticar. Remover depois.
-    if (r.reason === 'error') {
-      const dbg = document.createElement('div');
-      dbg.style.cssText = 'background:#fee;color:#900;padding:8px;font-size:12px;word-break:break-all;';
-      dbg.textContent = 'DEBUG: ' + (r.message || 'erro desconhecido');
-      enableBtn.closest('.notifybar')?.appendChild(dbg);
-    }
   });
 }
