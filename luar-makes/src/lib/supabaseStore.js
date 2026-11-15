@@ -135,9 +135,17 @@ export function createSupabaseStore(url, anonKey) {
 
     // Notificações push: qualquer visitante pode se inscrever/desinscrever (não precisa ser admin —
     // é só "o celular dela quer receber avisos"), mas só a Edge Function lê a lista completa.
-    async subscribePush({ endpoint, p256dh, auth }) {
-      const { error } = await sb.from('push_subscriptions').upsert({ endpoint, p256dh, auth }, { onConflict: 'endpoint' });
-      if (error) throw error;
+        async subscribePush({ endpoint, p256dh, auth }) {
+      // Evita "upsert"/ON CONFLICT: sob RLS sem política de leitura, o Postgres não consegue checar
+      // o conflito e bloqueia. Em vez disso: tenta inserir; se já existir (endpoint duplicado), atualiza.
+      const { error } = await sb.from('push_subscriptions').insert({ endpoint, p256dh, auth });
+      if (!error) return;
+      if (error.code === '23505') { // unique_violation: já estava inscrito, só atualiza as chaves
+        const { error: updErr } = await sb.from('push_subscriptions').update({ p256dh, auth }).eq('endpoint', endpoint);
+        if (updErr) throw updErr;
+        return;
+      }
+      throw error;
     },
     async unsubscribePush(endpoint) {
       const { error } = await sb.from('push_subscriptions').delete().eq('endpoint', endpoint);
