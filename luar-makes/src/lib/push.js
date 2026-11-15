@@ -70,13 +70,22 @@ export async function enablePush(store) {
   }
 }
 
-/** Se já havia uma assinatura ativa (ex.: outra sessão), garante que ela está salva no banco. */
+/** Se já havia uma assinatura ativa (ex.: outra sessão), garante que ela está salva no banco.
+ * Se a permissão já foi concedida mas a inscrição técnica se perdeu (ex.: dados do navegador
+ * foram limpos), cria uma nova sozinho — sem isso, como o banner só aparece com permissão
+ * "indefinida", a cliente ficaria permitida mas nunca de fato inscrita. */
 export async function resyncPushIfSubscribed(store) {
   if (!isPushSupported() || notificationPermission() !== 'granted') return;
   try {
     const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.getSubscription();
-    if (sub) await store.subscribePush(toSubscriptionRow(sub));
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+    await store.subscribePush(toSubscriptionRow(sub));
   } catch { /* melhor esforço: sem internet ou sem service worker pronto ainda */ }
 }
 
