@@ -6,9 +6,12 @@
   <title>Luar Make Up | Tudo por R$ 10,00 em Florianópolis</title>
   <meta name="description" content="Luar Make Up: makes, gloss, brincos e acessórios, tudo por R$ 10,00. Monte o carrinho e envie o pedido pelo WhatsApp. Rua Congonhas, 172, Monte Verde, Florianópolis/SC.">
   <meta name="theme-color" content="#fdf6f3">
-  <meta name="color-scheme" content="light">
+  <meta name="color-scheme" content="only light">
   <!-- Impede que o Android/Chrome "escureça" a loja automaticamente (modo escuro do sistema).
-       Sem isto, alguns celulares invertem as cores do site e ele fica com aparência apagada/acinzentada. -->
+       "light" sozinho não bastava: alguns WebViews (inclusive o navegador embutido do app do
+       Claude no Android) ainda aplicavam o escurecimento automático por cima, deixando tudo
+       opaco e sem profundidade — os degradês e sombras ficavam achatados numa cor só.
+       "only light" é o valor que realmente desliga essa inversão automática do sistema. -->
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/icons/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="manifest" href="/manifest.webmanifest">
